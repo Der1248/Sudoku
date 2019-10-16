@@ -1,7 +1,6 @@
 local hud_levels = {}
 
 minetest.register_on_joinplayer(function(player)
-	
     local name = player:get_player_name()
     player:hud_add({
 		hud_elem_type = "text",
@@ -9,7 +8,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=10},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "For Minetest 	  :  0.4.17.x",
+		text = "For Minetest 	  :  5.0.x",
 	})
 	player:hud_add({
 		hud_elem_type = "text",
@@ -17,7 +16,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=30},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "Game Version	 :  1.8.0",
+		text = "Game Version	 :  1.9.0",
 	})
     hud_levels[name] = player:hud_add({
 		hud_elem_type = "text",
@@ -28,9 +27,19 @@ minetest.register_on_joinplayer(function(player)
 		text = "Level: /",
 	})
 end)
+
+minetest.register_on_joinplayer(function(player)
+    player:set_inventory_formspec("")
+	if player:get_player_name() == "singleplayer" then
+    else
+        minetest.kick_player(player:get_player_name(), "you can play sudoku only as 'singleplayer'")
+    end
+end)
+
 minetest.register_on_joinplayer(function(player)
     player:set_inventory_formspec("")
 end)
+
 minetest.register_globalstep(function(dtime)
     local players = minetest.get_connected_players()
     for _,player in ipairs(players) do
@@ -44,19 +53,16 @@ minetest.register_globalstep(function(dtime)
             player:hud_change(hud_levels[player:get_player_name()], 'text', "Level: World "..ll.."."..l)
         end
     end
-    for i=12,25 do
-        for j=0,25 do
-            for k=75,89 do
-                if minetest.get_node({x=i, y=j, z=(-1)*k}).name == "default:mossycobble" then
-                    minetest.set_node({x=i, y=j, z=(-1)*k}, {name="sudoku:wall"})
-                end
-                if minetest.get_node({x=i, y=j, z=(-1)*k}).name == "default:obsidian_glass" then
-                    minetest.set_node({x=i, y=j, z=(-1)*k}, {name="sudoku:glass"})
-                end
-            end
-        end
-    end
 end)
+function file_check(file_name)
+	local file_found=io.open(file_name, "r")
+	if file_found==nil then
+		file_found=false
+	else
+		file_found=true
+	end
+	return file_found
+end
 minetest.register_on_joinplayer(function(player)
     local override_table = player:get_physics_override()
     override_table.new_move = false
@@ -67,34 +73,182 @@ minetest.register_on_joinplayer(function(player)
     minetest.setting_set("node_highlighting", "box")
     player:hud_set_hotbar_itemcount(9)
     player:setpos({x=19, y=10, z=-87})
-    for i=17,21 do
-        for j=9,15 do
-            minetest.set_node({x=i, y=j, z=-89}, {name="sudoku:wall"})
-        end
-    end
+	if file_check(minetest.get_worldpath().."/level1.txt") == true then
+	else
+		file = io.open(minetest.get_worldpath().."/level1.txt", "w")
+		file:write("1")
+		file:close()
+	end
+    if file_check(minetest.get_worldpath().."/level2.txt") == true then
+	else
+		file = io.open(minetest.get_worldpath().."/level2.txt", "w")
+		file:write("1")
+		file:close()
+	end
+    if file_check(minetest.get_worldpath().."/level3.txt") == true then
+	else
+		file = io.open(minetest.get_worldpath().."/level3.txt", "w")
+		file:write("1")
+		file:close()
+	end
+    if file_check(minetest.get_worldpath().."/level4.txt") == true then
+	else
+		file = io.open(minetest.get_worldpath().."/level4.txt", "w")
+		file:write("1")
+		file:close()
+	end
+	if file_check(minetest.get_worldpath().."/level5.txt") == true then
+	else
+		file = io.open(minetest.get_worldpath().."/level5.txt", "w")
+		file:write("1")
+		file:close()
+	end
 end)
 minetest.register_on_newplayer(function(player)
     local player = minetest.get_player_by_name(player:get_player_name())
     local pri = minetest.get_player_privs(player:get_player_name())
     pri["fly"] = true
+	pri["fast"] = true
     minetest.set_player_privs(player:get_player_name(), pri)
-	player:setpos({x=20, y=10, z=-91})
-	
+	player:setpos({x=19, y=10, z=-88})
 end)
+
+local timer = 0
+local set = 0
+minetest.register_globalstep(function(dtime)
+	timer = timer + dtime
+	local players = minetest.get_connected_players()
+	for _,player in ipairs(players) do
+		local player_inv = player:get_inventory()
+		player_inv:set_size("load", 1)
+		if minetest.get_node({x=10, y=9, z=-75}).name == "sudoku:gray" and player_inv:get_stack("load", 1):get_count() < 1 and set == 0 then
+			minetest.chat_send_all("The world is loading... This can take a few seconds")
+			player:setpos({x=19, y=10, z=-88})
+			for i = 10, 28 do
+				for m = 8,28 do
+					for j = 75, 93 do
+						minetest.set_node({x=i, y=m, z=(-1)*j}, {name="air"})
+					end
+				end
+			end
+			set = 1
+		end
+		if minetest.get_node({x=10, y=9, z=-75}).name == "sudoku:gray" and player_inv:get_stack("load", 1):get_count() < 1 and set == 1 then
+			player:setpos({x=19, y=10, z=-88})
+			for i = 10, 28 do
+				for j = 79, 93 do
+					minetest.set_node({x=i, y=28, z=(-1)*j}, {name="sudoku:meselamp"})
+				end
+			end
+			for i = 10, 28 do
+				for j = 79, 93 do
+					for m = 29,150 do
+						minetest.set_node({x=i, y=m, z=(-1)*j}, {name="air"})
+					end
+				end
+			end
+			minetest.chat_send_all("The world should be loaded, if not start a new world!")
+			player:setpos({x=19, y=10, z=-88})
+			player_inv:set_stack("load", 1, "default:dirt")
+		end
+		if timer >= 1 then
+			timer = 0
+			for i = 10, 28 do
+				for m = 9,27 do
+					minetest.set_node({x=i, y=m, z=-75}, {name="sudoku:gray"})
+				end
+			end
+			for i = 75, 85 do
+				for m = 9,28 do
+					minetest.set_node({x=9, y=m, z=(-1)*i}, {name="sudoku:wall"})
+					minetest.set_node({x=29, y=m, z=(-1)*i}, {name="sudoku:wall"})
+				end
+			end
+			for i = 86, 87 do
+				for m = 9,28 do
+					minetest.set_node({x=10, y=m, z=(-1)*i}, {name="sudoku:wall"})
+					minetest.set_node({x=28, y=m, z=(-1)*i}, {name="sudoku:wall"})
+				end
+			end
+			for i = 88, 89 do
+				for m = 9,28 do
+					minetest.set_node({x=11, y=m, z=(-1)*i}, {name="sudoku:wall"})
+					minetest.set_node({x=27, y=m, z=(-1)*i}, {name="sudoku:wall"})
+				end
+			end
+			for m = 9,28 do
+				minetest.set_node({x=12, y=m, z=-90}, {name="sudoku:wall"})
+				minetest.set_node({x=26, y=m, z=-90}, {name="sudoku:wall"})
+				minetest.set_node({x=13, y=m, z=-91}, {name="sudoku:wall"})
+				minetest.set_node({x=25, y=m, z=-91}, {name="sudoku:wall"})
+				minetest.set_node({x=14, y=m, z=-92}, {name="sudoku:wall"})
+				minetest.set_node({x=24, y=m, z=-92}, {name="sudoku:wall"})
+			end
+			for i = 15, 23 do
+				for m = 9,28 do
+					minetest.set_node({x=i, y=m, z=-93}, {name="sudoku:wall"})
+				end
+			end
+			
+			for i = 10, 28 do
+				for j = 75, 78 do
+					minetest.set_node({x=i, y=28, z=(-1)*j}, {name="sudoku:wall"})
+				end
+			end
+			for i = 10, 28 do
+				for j = 75, 93 do
+					minetest.set_node({x=i, y=7, z=(-1)*j}, {name="sudoku:desert"})
+					minetest.set_node({x=i, y=8, z=(-1)*j}, {name="sudoku:desert"})
+				end
+			end
+			for i = 11, 27 do
+				for j = 80, 84 do
+					minetest.set_node({x=i, y=8, z=(-1)*j}, {name="air"})
+				end
+			end
+			for i = 12, 26 do
+				for j = 85, 86 do
+					minetest.set_node({x=i, y=8, z=(-1)*j}, {name="air"})
+				end
+			end
+			for i = 13, 25 do
+				for j = 87, 88 do
+					minetest.set_node({x=i, y=8, z=(-1)*j}, {name="air"})
+				end
+			end
+			for i = 14, 24 do
+				minetest.set_node({x=i, y=8, z=-89}, {name="air"})
+			end
+			for i = 15, 23 do
+				minetest.set_node({x=i, y=8, z=-90}, {name="air"})
+			end
+			for i = 16, 22 do
+				minetest.set_node({x=i, y=8, z=-91}, {name="air"})
+			end
+			minetest.set_node({x=17, y=8, z=-80}, {name="sudoku:new_w1"})
+			minetest.set_node({x=18, y=8, z=-80}, {name="sudoku:new_w2"})
+			minetest.set_node({x=19, y=8, z=-80}, {name="sudoku:new_w3"})
+			minetest.set_node({x=20, y=8, z=-80}, {name="sudoku:new_w4"})
+			minetest.set_node({x=21, y=8, z=-80}, {name="sudoku:new_w5"})
+			minetest.set_node({x=19, y=7, z=-85}, {name="sudoku:finisch"})
+		end
+	end
+end)
+
 minetest.register_node("sudoku:desert",{
 	description = "Desert",
 	tiles = {"default_desert_sand.png"},
-    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+    groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
 })
 minetest.register_node("sudoku:black",{
 	description = "Black",
 	tiles = {"wool_black.png"},
-    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+    groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
 })
 minetest.register_node("sudoku:gray",{
 	description = "Gray",
 	tiles = {"default_sand.png"},
-    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+    groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
 })
 minetest.register_node("sudoku:glass", {
 	description = "Obsidian Glass",
@@ -104,17 +258,28 @@ minetest.register_node("sudoku:glass", {
 	paramtype2 = "glasslikeliquidlevel",
 	is_ground_content = false,
 	sunlight_propagates = true,
+	groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
 })
 minetest.register_node("sudoku:wall",{
 	description = "Wall",
 	tiles = {"default_mossycobble.png"},
-    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+    groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+})
+minetest.register_node("sudoku:meselamp", {
+	description = "Mese Lamp",
+	drawtype = "glasslike",
+	tiles = {"sudoku_meselamp.png"},
+	paramtype = "light",
+	sunlight_propagates = true,
+	is_ground_content = false,
+	groups = {cracky = 3, oddly_breakable_by_hand = 3},
+	light_source = 15,
 })
 for i=1,9 do
     minetest.register_node("sudoku:"..i,{
 	    description = ""..i,
 	    tiles = {"sudoku_1_"..i..".png"},
-        --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+        groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
     })
 end
 for i=1,9 do
@@ -122,6 +287,13 @@ for i=1,9 do
 	    description = ""..i,
 	    tiles = {"sudoku_2_"..i..".png"},
         groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+		after_place_node = function(pos, placer, itemstack, pointed_thing)
+			if Place(placer,i,pos) == false or pos.z ~= -76 then
+				minetest.set_node(pos, {name="air"})
+				local player_inv = placer:get_inventory()
+				return itemstack
+			end
+		end,
     })
 end
 function New(player,page)
@@ -137,9 +309,24 @@ function New(player,page)
     for i=1,9 do
 	    ar1[i] = lv:read("*l")
     end
-    for i=14,24 do
-        for k=9,19 do
+    for i=10,28 do
+        for k=9,27 do
             minetest.set_node({x=i, y=k, z=-76}, {name="air"})
+        end
+    end
+	for i=10,13 do
+        for k=9,27 do
+            minetest.set_node({x=i, y=k, z=-76}, {name="sudoku:wall"})
+        end
+    end
+	for i=25,28 do
+        for k=9,27 do
+            minetest.set_node({x=i, y=k, z=-76}, {name="sudoku:wall"})
+        end
+    end
+	for i=10,28 do
+        for k=18,27 do
+            minetest.set_node({x=i, y=k, z=-76}, {name="sudoku:wall"})
         end
     end
     local a1 = 0
@@ -241,6 +428,184 @@ function Fi(i,k)
         temp = "0"
     end
     return temp
+end
+function repeats(s,c)
+    local _,n = s:gsub(c,"")
+    return n
+end
+function Place(player,number,pos)
+	local dd = 0
+    local ar = {}
+    for i=14,24 do
+        local d = 0
+        local temp = ""
+        for k=9,19 do
+			temp = temp..Fi(i,k)
+        end
+        ar[i-13] = temp
+    end
+    for i=1,3 do
+        if repeats(ar[i],"1") < 2 and repeats(ar[i],"2") < 2 and repeats(ar[i],"3") < 2 and repeats(ar[i],"4") < 2 and repeats(ar[i],"5") < 2 and repeats(ar[i],"6") < 2 and repeats(ar[i],"7") < 2 and repeats(ar[i],"8") < 2 and repeats(ar[i],"9") < 2 then
+        else
+            dd = 1
+        end
+    end
+    for i=5,7 do
+        if repeats(ar[i],"1") < 2 and repeats(ar[i],"2") < 2 and repeats(ar[i],"3") < 2 and repeats(ar[i],"4") < 2 and repeats(ar[i],"5") < 2 and repeats(ar[i],"6") < 2 and repeats(ar[i],"7") < 2 and repeats(ar[i],"8") < 2 and repeats(ar[i],"9") < 2 then
+        else
+            dd = 1
+        end
+    end
+    for i=9,11 do
+        if repeats(ar[i],"1") < 2 and repeats(ar[i],"2") < 2 and repeats(ar[i],"3") < 2 and repeats(ar[i],"4") < 2 and repeats(ar[i],"5") < 2 and repeats(ar[i],"6") < 2 and repeats(ar[i],"7") < 2 and repeats(ar[i],"8") < 2 and repeats(ar[i],"9") < 2 then
+        else
+            dd = 1
+        end
+    end
+    local ar = {}
+    for k=9,19 do
+        local d = 0
+        local temp = ""
+        for i=14,24 do
+            temp = temp..Fi(i,k)
+        end
+        ar[k-8] = temp
+    end
+    for i=1,3 do
+        if repeats(ar[i],"1") < 2 and repeats(ar[i],"2") < 2 and repeats(ar[i],"3") < 2 and repeats(ar[i],"4") < 2 and repeats(ar[i],"5") < 2 and repeats(ar[i],"6") < 2 and repeats(ar[i],"7") < 2 and repeats(ar[i],"8") < 2 and repeats(ar[i],"9") < 2 then
+        else
+            dd = 1
+        end
+    end
+    for i=5,7 do
+        if repeats(ar[i],"1") < 2 and repeats(ar[i],"2") < 2 and repeats(ar[i],"3") < 2 and repeats(ar[i],"4") < 2 and repeats(ar[i],"5") < 2 and repeats(ar[i],"6") < 2 and repeats(ar[i],"7") < 2 and repeats(ar[i],"8") < 2 and repeats(ar[i],"9") < 2 then
+        else
+            dd = 1
+        end
+    end
+    for i=9,11 do
+        if repeats(ar[i],"1") < 2 and repeats(ar[i],"2") < 2 and repeats(ar[i],"3") < 2 and repeats(ar[i],"4") < 2 and repeats(ar[i],"5") < 2 and repeats(ar[i],"6") < 2 and repeats(ar[i],"7") < 2 and repeats(ar[i],"8") < 2 and repeats(ar[i],"9") < 2 then
+        else
+            dd = 1
+        end
+    end
+	
+    local ar = {}
+    local temp = ""
+    for k=9,11 do
+        local d = 0
+        for i=14,16 do
+            temp = temp..Fi(i,k)
+        end
+    end
+    if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
+    else
+        dd = 1
+    end
+    local ar = {}
+    local temp = ""
+    for k=9,11 do
+        local d = 0
+        for i=18,20 do
+            temp = temp..Fi(i,k)
+        end
+    end
+    if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
+    else
+        dd = 1
+    end
+    local ar = {}
+    local temp = ""
+    for k=9,11 do
+        local d = 0
+        for i=22,24 do
+            temp = temp..Fi(i,k)
+        end
+    end
+    if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
+    else
+        dd = 1
+    end
+
+    local ar = {}
+    local temp = ""
+    for k=13,15 do
+        local d = 0
+        for i=14,16 do
+            temp = temp..Fi(i,k)
+        end
+    end
+    if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
+    else
+        dd = 1
+    end
+    local ar = {}
+    local temp = ""
+    for k=13,15 do
+        local d = 0
+        for i=18,20 do
+            temp = temp..Fi(i,k)
+        end
+    end
+    if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
+    else
+        dd = 1
+    end
+    local ar = {}
+    local temp = ""
+    for k=13,15 do
+        local d = 0
+        for i=22,24 do
+            temp = temp..Fi(i,k)
+        end
+    end
+    if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
+    else
+        dd = 1
+    end
+    local ar = {}
+    local temp = ""
+    for k=17,29 do
+        local d = 0
+        for i=14,16 do
+            temp = temp..Fi(i,k)
+        end
+    end
+    if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
+    else
+        dd = 1
+    end
+    local ar = {}
+    local temp = ""
+    for k=17,19 do
+        local d = 0
+        for i=18,20 do
+            temp = temp..Fi(i,k)
+        end
+    end
+    if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
+    else
+        dd = 1
+    end
+
+    local ar = {}
+    local temp = ""
+    for k=17,19 do
+        local d = 0
+        for i=22,24 do
+            temp = temp..Fi(i,k)
+        end
+    end
+    if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
+    else
+        dd = 1
+    end
+	if dd == 1 then
+		minetest.chat_send_all("number already exists")
+		return false
+	else
+		return true
+	end
 end
 function Finisch(player)
     local dd = 0
@@ -426,6 +791,91 @@ function Finisch(player)
         end
     end
 end
+
+function lvbut(from,num,level2)
+    local formspec = ""
+    .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
+    .."background[5,6.5;1,1;gui_formbg.png;true]"
+    .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
+    .."bgcolor[#080808BB;true]"
+    if tonumber(level2) > from and num > 0 then
+        formspec = formspec.."button[0,1;1,1;a;"..(from+1).."]"
+    end
+    if tonumber(level2) > (from+1) and num > 1 then
+        formspec = formspec.."button[1,1;1,1;b;"..(from+2).."]"
+    end
+    if tonumber(level2) > (from+2) and num > 2 then
+        formspec = formspec.."button[2,1;1,1;c;"..(from+3).."]"
+    end
+    if tonumber(level2) > (from+3) and num > 3 then
+        formspec = formspec.."button[3,1;1,1;d;"..(from+4).."]"
+    end
+    if tonumber(level2) > (from+4) and num > 4 then
+        formspec = formspec.."button[4,1;1,1;e;"..(from+5).."]"
+    end
+    if tonumber(level2) > (from+5) and num > 5 then
+        formspec = formspec.."button[0,2;1,1;f;"..(from+6).."]"
+    end
+    if tonumber(level2) > (from+6) and num > 6 then
+        formspec = formspec.."button[1,2;1,1;g;"..(from+7).."]"
+    end
+    if tonumber(level2) > (from+7) and num > 7 then
+        formspec = formspec.."button[2,2;1,1;h;"..(from+8).."]"
+    end
+    if tonumber(level2) > (from+8) and num > 8 then
+        formspec = formspec.."button[3,2;1,1;i;"..(from+9).."]"
+    end
+    if tonumber(level2) > (from+9) and num > 9 then
+        formspec = formspec.."button[4,2;1,1;j;"..(from+10).."]"
+    end
+    if tonumber(level2) > (from+10) and num > 10 then
+        formspec = formspec.."button[0,3;1,1;k;"..(from+11).."]"
+    end
+    if tonumber(level2) > (from+11) and num > 11 then
+        formspec = formspec.."button[1,3;1,1;l;"..(from+12).."]"
+    end
+    if tonumber(level2) > (from+12) and num > 12 then
+        formspec = formspec.."button[2,3;1,1;m;"..(from+13).."]"
+    end
+    if tonumber(level2) > (from+13) and num > 13 then
+        formspec = formspec.."button[3,3;1,1;n;"..(from+14).."]"
+    end
+    if tonumber(level2) > (from+14) and num > 14 then
+        formspec = formspec.."button[4,3;1,1;o;"..(from+15).."]"
+    end
+    if tonumber(level2) > (from+15) and num > 15 then
+        formspec = formspec.."button[0,4;1,1;p;"..(from+16).."]"
+    end
+    if tonumber(level2) > (from+16) and num > 16 then
+        formspec = formspec.."button[1,4;1,1;q;"..(from+17).."]"
+    end
+    if tonumber(level2) > (from+17) and num > 17 then
+        formspec = formspec.."button[2,4;1,1;r;"..(from+18).."]"
+    end
+    if tonumber(level2) > (from+18) and num > 18 then
+        formspec = formspec.."button[3,4;1,1;s;"..(from+19).."]"
+    end
+    if tonumber(level2) > (from+19) and num > 19 then
+        formspec = formspec.."button[4,4;1,1;t;"..(from+20).."]"
+    end
+    if tonumber(level2) > (from+20) and num > 20 then
+        formspec = formspec.."button[0,5;1,1;u;"..(from+21).."]"
+    end
+    if tonumber(level2) > (from+21) and num > 21 then
+        formspec = formspec.."button[1,5;1,1;v;"..(from+22).."]"
+    end
+    if tonumber(level2) > (from+22) and num > 22 then
+        formspec = formspec.."button[2,5;1,1;w;"..(from+23).."]"
+    end
+    if tonumber(level2) > (from+23) and num > 23 then
+        formspec = formspec.."button[3,5;1,1;x;"..(from+24).."]"
+    end
+    if tonumber(level2) > (from+24) and num > 24 then
+        formspec = formspec.."button[4,5;1,1;y;"..(from+25).."]"
+    end
+    return formspec
+end
+
 local w11 = {}
 w11.get_formspec = function(player, pos)
 	if player == nil then
@@ -436,84 +886,8 @@ w11.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-        .."button[0,1;1,1;;1]"
-        if tonumber(level2) > 1 then
-            formspec = formspec.."button[1,1;1,1;;2]"
-        end
-        if tonumber(level2) > 2 then
-            formspec = formspec.."button[2,1;1,1;;3]"
-        end
-        if tonumber(level2) > 3 then
-            formspec = formspec.."button[3,1;1,1;;4]"
-        end
-        if tonumber(level2) > 4 then
-            formspec = formspec.."button[4,1;1,1;;5]"
-        end
-        if tonumber(level2) > 5 then
-            formspec = formspec.."button[0,2;1,1;;6]"
-        end
-        if tonumber(level2) > 6 then
-            formspec = formspec.."button[1,2;1,1;;7]"
-        end
-        if tonumber(level2) > 7 then
-            formspec = formspec.."button[2,2;1,1;;8]"
-        end
-        if tonumber(level2) > 8 then
-            formspec = formspec.."button[3,2;1,1;;9]"
-        end
-        if tonumber(level2) > 9 then
-            formspec = formspec.."button[4,2;1,1;;10]"
-        end
-        if tonumber(level2) > 10 then
-            formspec = formspec.."button[0,3;1,1;;11]"
-        end
-        if tonumber(level2) > 11 then
-            formspec = formspec.."button[1,3;1,1;;12]"
-        end
-        if tonumber(level2) > 12 then
-            formspec = formspec.."button[2,3;1,1;;13]"
-        end
-        if tonumber(level2) > 13 then
-            formspec = formspec.."button[3,3;1,1;;14]"
-        end
-        if tonumber(level2) > 14 then
-            formspec = formspec.."button[4,3;1,1;;15]"
-        end
-        if tonumber(level2) > 15 then
-            formspec = formspec.."button[0,4;1,1;;16]"
-        end
-        if tonumber(level2) > 16 then
-            formspec = formspec.."button[1,4;1,1;;17]"
-        end
-        if tonumber(level2) > 17 then
-            formspec = formspec.."button[2,4;1,1;;18]"
-        end
-        if tonumber(level2) > 18 then
-            formspec = formspec.."button[3,4;1,1;;19]"
-        end
-        if tonumber(level2) > 19 then
-            formspec = formspec.."button[4,4;1,1;;20]"
-        end
-        if tonumber(level2) > 20 then
-            formspec = formspec.."button[0,5;1,1;;21]"
-        end
-        if tonumber(level2) > 21 then
-            formspec = formspec.."button[1,5;1,1;;22]"
-        end
-        if tonumber(level2) > 22 then
-            formspec = formspec.."button[2,5;1,1;;23]"
-        end
-        if tonumber(level2) > 23 then
-            formspec = formspec.."button[3,5;1,1;;24]"
-        end
-        if tonumber(level2) > 24 then
-            formspec = formspec.."button[4,5;1,1;;25]"
-        end
+        formspec = formspec..lvbut(0,25,level2)
         if tonumber(level2) > 25 then
             formspec = formspec.."button[2.5,6;1,1;wab;>]"
         end
@@ -529,85 +903,9 @@ w12.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-        .."button[0,1;1,1;;26]"
-        .."button[1.5,6;1,1;waa;<]"
-        if tonumber(level2) > 26 then
-            formspec = formspec.."button[1,1;1,1;;27]"
-        end
-        if tonumber(level2) > 27 then
-            formspec = formspec.."button[2,1;1,1;;28]"
-        end
-        if tonumber(level2) > 28 then
-            formspec = formspec.."button[3,1;1,1;;29]"
-        end
-        if tonumber(level2) > 29 then
-            formspec = formspec.."button[4,1;1,1;;30]"
-        end
-        if tonumber(level2) > 30 then
-            formspec = formspec.."button[0,2;1,1;;31]"
-        end
-        if tonumber(level2) > 31 then
-            formspec = formspec.."button[1,2;1,1;;32]"
-        end
-        if tonumber(level2) > 32 then
-            formspec = formspec.."button[2,2;1,1;;33]"
-        end
-        if tonumber(level2) > 33 then
-            formspec = formspec.."button[3,2;1,1;;34]"
-        end
-        if tonumber(level2) > 34 then
-            formspec = formspec.."button[4,2;1,1;;35]"
-        end
-        if tonumber(level2) > 35 then
-            formspec = formspec.."button[0,3;1,1;;36]"
-        end
-        if tonumber(level2) > 36 then
-            formspec = formspec.."button[1,3;1,1;;37]"
-        end
-        if tonumber(level2) > 37 then
-            formspec = formspec.."button[2,3;1,1;;38]"
-        end
-        if tonumber(level2) > 38 then
-            formspec = formspec.."button[3,3;1,1;;39]"
-        end
-        if tonumber(level2) > 39 then
-            formspec = formspec.."button[4,3;1,1;;40]"
-        end
-        if tonumber(level2) > 40 then
-            formspec = formspec.."button[0,4;1,1;;41]"
-        end
-        if tonumber(level2) > 41 then
-            formspec = formspec.."button[1,4;1,1;;42]"
-        end
-        if tonumber(level2) > 42 then
-            formspec = formspec.."button[2,4;1,1;;43]"
-        end
-        if tonumber(level2) > 43 then
-            formspec = formspec.."button[3,4;1,1;;44]"
-        end
-        if tonumber(level2) > 44 then
-            formspec = formspec.."button[4,4;1,1;;45]"
-        end
-        if tonumber(level2) > 45 then
-            formspec = formspec.."button[0,5;1,1;;46]"
-        end
-        if tonumber(level2) > 46 then
-            formspec = formspec.."button[1,5;1,1;;47]"
-        end
-        if tonumber(level2) > 47 then
-            formspec = formspec.."button[2,5;1,1;;48]"
-        end
-        if tonumber(level2) > 48 then
-            formspec = formspec.."button[3,5;1,1;;49]"
-        end
-        if tonumber(level2) > 49 then
-            formspec = formspec.."button[4,5;1,1;;50]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;waa;<]"
+        formspec = formspec..lvbut(25,25,level2)
         if tonumber(level2) > 50 then
             formspec = formspec.."button[2.5,6;1,1;wac;>]"
         end
@@ -623,85 +921,9 @@ w13.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-        .."button[0,1;1,1;;51]"
-        .."button[1.5,6;1,1;wab;<]"
-        if tonumber(level2) > 51 then
-            formspec = formspec.."button[1,1;1,1;;52]"
-        end
-        if tonumber(level2) > 52 then
-            formspec = formspec.."button[2,1;1,1;;53]"
-        end
-        if tonumber(level2) > 53 then
-            formspec = formspec.."button[3,1;1,1;;54]"
-        end
-        if tonumber(level2) > 54 then
-            formspec = formspec.."button[4,1;1,1;;55]"
-        end
-        if tonumber(level2) > 55 then
-            formspec = formspec.."button[0,2;1,1;;56]"
-        end
-        if tonumber(level2) > 56 then
-            formspec = formspec.."button[1,2;1,1;;57]"
-        end
-        if tonumber(level2) > 57 then
-            formspec = formspec.."button[2,2;1,1;;58]"
-        end
-        if tonumber(level2) > 58 then
-            formspec = formspec.."button[3,2;1,1;;59]"
-        end
-        if tonumber(level2) > 59 then
-            formspec = formspec.."button[4,2;1,1;;60]"
-        end
-        if tonumber(level2) > 60 then
-            formspec = formspec.."button[0,3;1,1;;61]"
-        end
-        if tonumber(level2) > 61 then
-            formspec = formspec.."button[1,3;1,1;;62]"
-        end
-        if tonumber(level2) > 62 then
-            formspec = formspec.."button[2,3;1,1;;63]"
-        end
-        if tonumber(level2) > 63 then
-            formspec = formspec.."button[3,3;1,1;;64]"
-        end
-        if tonumber(level2) > 64 then
-            formspec = formspec.."button[4,3;1,1;;65]"
-        end
-        if tonumber(level2) > 65 then
-            formspec = formspec.."button[0,4;1,1;;66]"
-        end
-        if tonumber(level2) > 66 then
-            formspec = formspec.."button[1,4;1,1;;67]"
-        end
-        if tonumber(level2) > 67 then
-            formspec = formspec.."button[2,4;1,1;;68]"
-        end
-        if tonumber(level2) > 68 then
-            formspec = formspec.."button[3,4;1,1;;69]"
-        end
-        if tonumber(level2) > 69 then
-            formspec = formspec.."button[4,4;1,1;;70]"
-        end
-        if tonumber(level2) > 70 then
-            formspec = formspec.."button[0,5;1,1;;71]"
-        end
-        if tonumber(level2) > 71 then
-            formspec = formspec.."button[1,5;1,1;;72]"
-        end
-        if tonumber(level2) > 72 then
-            formspec = formspec.."button[2,5;1,1;;73]"
-        end
-        if tonumber(level2) > 73 then
-            formspec = formspec.."button[3,5;1,1;;74]"
-        end
-        if tonumber(level2) > 74 then
-            formspec = formspec.."button[4,5;1,1;;75]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wab;<]"
+        formspec = formspec..lvbut(50,25,level2)
         if tonumber(level2) > 75 then
             formspec = formspec.."button[2.5,6;1,1;wad;>]"
         end
@@ -717,85 +939,9 @@ w14.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-        .."button[0,1;1,1;;76]"
-        formspec = formspec.."button[1.5,6;1,1;wac;<]"
-        if tonumber(level2) > 76 then
-            formspec = formspec.."button[1,1;1,1;;77]"
-        end
-        if tonumber(level2) > 77 then
-            formspec = formspec.."button[2,1;1,1;;78]"
-        end
-        if tonumber(level2) > 78 then
-            formspec = formspec.."button[3,1;1,1;;79]"
-        end
-        if tonumber(level2) > 79 then
-            formspec = formspec.."button[4,1;1,1;;80]"
-        end
-        if tonumber(level2) > 80 then
-            formspec = formspec.."button[0,2;1,1;;81]"
-        end
-        if tonumber(level2) > 81 then
-            formspec = formspec.."button[1,2;1,1;;82]"
-        end
-        if tonumber(level2) > 82 then
-            formspec = formspec.."button[2,2;1,1;;83]"
-        end
-        if tonumber(level2) > 83 then
-            formspec = formspec.."button[3,2;1,1;;84]"
-        end
-        if tonumber(level2) > 84 then
-            formspec = formspec.."button[4,2;1,1;;85]"
-        end
-        if tonumber(level2) > 85 then
-            formspec = formspec.."button[0,3;1,1;;86]"
-        end
-        if tonumber(level2) > 86 then
-            formspec = formspec.."button[1,3;1,1;;87]"
-        end
-        if tonumber(level2) > 87 then
-            formspec = formspec.."button[2,3;1,1;;88]"
-        end
-        if tonumber(level2) > 88 then
-            formspec = formspec.."button[3,3;1,1;;89]"
-        end
-        if tonumber(level2) > 89 then
-            formspec = formspec.."button[4,3;1,1;;90]"
-        end
-        if tonumber(level2) > 90 then
-            formspec = formspec.."button[0,4;1,1;;91]"
-        end
-        if tonumber(level2) > 91 then
-            formspec = formspec.."button[1,4;1,1;;92]"
-        end
-        if tonumber(level2) > 92 then
-            formspec = formspec.."button[2,4;1,1;;93]"
-        end
-        if tonumber(level2) > 93 then
-            formspec = formspec.."button[3,4;1,1;;94]"
-        end
-        if tonumber(level2) > 94 then
-            formspec = formspec.."button[4,4;1,1;;95]"
-        end
-        if tonumber(level2) > 95 then
-            formspec = formspec.."button[0,5;1,1;;96]"
-        end
-        if tonumber(level2) > 96 then
-            formspec = formspec.."button[1,5;1,1;;97]"
-        end
-        if tonumber(level2) > 97 then
-            formspec = formspec.."button[2,5;1,1;;98]"
-        end
-        if tonumber(level2) > 98 then
-            formspec = formspec.."button[3,5;1,1;;99]"
-        end
-        if tonumber(level2) > 99 then
-            formspec = formspec.."button[4,5;1,1;;100]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wac;<]"
+        formspec = formspec..lvbut(75,25,level2)
         if tonumber(level2) > 100 then
             formspec = formspec.."button[2.5,6;1,1;wae;>]"
         end
@@ -811,85 +957,9 @@ w15.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-        .."button[0,1;1,1;;101]"
-        formspec = formspec.."button[1.5,6;1,1;wad;<]"
-        if tonumber(level2) > 101 then
-            formspec = formspec.."button[1,1;1,1;;102]"
-        end
-        if tonumber(level2) > 102 then
-            formspec = formspec.."button[2,1;1,1;;103]"
-        end
-        if tonumber(level2) > 103 then
-            formspec = formspec.."button[3,1;1,1;;104]"
-        end
-        if tonumber(level2) > 104 then
-            formspec = formspec.."button[4,1;1,1;;105]"
-        end
-        if tonumber(level2) > 105 then
-            formspec = formspec.."button[0,2;1,1;;106]"
-        end
-        if tonumber(level2) > 106 then
-            formspec = formspec.."button[1,2;1,1;;107]"
-        end
-        if tonumber(level2) > 107 then
-            formspec = formspec.."button[2,2;1,1;;108]"
-        end
-        if tonumber(level2) > 108 then
-            formspec = formspec.."button[3,2;1,1;;109]"
-        end
-        if tonumber(level2) > 109 then
-            formspec = formspec.."button[4,2;1,1;;110]"
-        end
-        if tonumber(level2) > 110 then
-            formspec = formspec.."button[0,3;1,1;;111]"
-        end
-        if tonumber(level2) > 111 then
-            formspec = formspec.."button[1,3;1,1;;112]"
-        end
-        if tonumber(level2) > 112 then
-            formspec = formspec.."button[2,3;1,1;;113]"
-        end
-        if tonumber(level2) > 113 then
-            formspec = formspec.."button[3,3;1,1;;114]"
-        end
-        if tonumber(level2) > 114 then
-            formspec = formspec.."button[4,3;1,1;;115]"
-        end
-        if tonumber(level2) > 115 then
-            formspec = formspec.."button[0,4;1,1;;116]"
-        end
-        if tonumber(level2) > 116 then
-            formspec = formspec.."button[1,4;1,1;;117]"
-        end
-        if tonumber(level2) > 117 then
-            formspec = formspec.."button[2,4;1,1;;118]"
-        end
-        if tonumber(level2) > 118 then
-            formspec = formspec.."button[3,4;1,1;;119]"
-        end
-        if tonumber(level2) > 119 then
-            formspec = formspec.."button[4,4;1,1;;120]"
-        end
-        if tonumber(level2) > 120 then
-            formspec = formspec.."button[0,5;1,1;;121]"
-        end
-        if tonumber(level2) > 121 then
-            formspec = formspec.."button[1,5;1,1;;122]"
-        end
-        if tonumber(level2) > 122 then
-            formspec = formspec.."button[2,5;1,1;;123]"
-        end
-        if tonumber(level2) > 123 then
-            formspec = formspec.."button[3,5;1,1;;124]"
-        end
-        if tonumber(level2) > 124 then
-            formspec = formspec.."button[4,5;1,1;;125]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wad;<]"
+        formspec = formspec..lvbut(100,25,level2)
         if tonumber(level2) > 125 then
             formspec = formspec.."button[2.5,6;1,1;waf;>]"
         end
@@ -905,85 +975,9 @@ w16.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-        .."button[0,1;1,1;;126]"
-        formspec = formspec.."button[1.5,6;1,1;wae;<]"
-        if tonumber(level2) > 126 then
-            formspec = formspec.."button[1,1;1,1;;127]"
-        end
-        if tonumber(level2) > 127 then
-            formspec = formspec.."button[2,1;1,1;;128]"
-        end
-        if tonumber(level2) > 128 then
-            formspec = formspec.."button[3,1;1,1;;129]"
-        end
-        if tonumber(level2) > 129 then
-            formspec = formspec.."button[4,1;1,1;;130]"
-        end
-        if tonumber(level2) > 130 then
-            formspec = formspec.."button[0,2;1,1;;131]"
-        end
-        if tonumber(level2) > 131 then
-            formspec = formspec.."button[1,2;1,1;;132]"
-        end
-        if tonumber(level2) > 132 then
-            formspec = formspec.."button[2,2;1,1;;133]"
-        end
-        if tonumber(level2) > 133 then
-            formspec = formspec.."button[3,2;1,1;;134]"
-        end
-        if tonumber(level2) > 134 then
-            formspec = formspec.."button[4,2;1,1;;135]"
-        end
-        if tonumber(level2) > 135 then
-            formspec = formspec.."button[0,3;1,1;;136]"
-        end
-        if tonumber(level2) > 136 then
-            formspec = formspec.."button[1,3;1,1;;137]"
-        end
-        if tonumber(level2) > 137 then
-            formspec = formspec.."button[2,3;1,1;;138]"
-        end
-        if tonumber(level2) > 138 then
-            formspec = formspec.."button[3,3;1,1;;139]"
-        end
-        if tonumber(level2) > 139 then
-            formspec = formspec.."button[4,3;1,1;;140]"
-        end
-        if tonumber(level2) > 140 then
-            formspec = formspec.."button[0,4;1,1;;141]"
-        end
-        if tonumber(level2) > 141 then
-            formspec = formspec.."button[1,4;1,1;;142]"
-        end
-        if tonumber(level2) > 142 then
-            formspec = formspec.."button[2,4;1,1;;143]"
-        end
-        if tonumber(level2) > 143 then
-            formspec = formspec.."button[3,4;1,1;;144]"
-        end
-        if tonumber(level2) > 144 then
-            formspec = formspec.."button[4,4;1,1;;145]"
-        end
-        if tonumber(level2) > 145 then
-            formspec = formspec.."button[0,5;1,1;;146]"
-        end
-        if tonumber(level2) > 146 then
-            formspec = formspec.."button[1,5;1,1;;147]"
-        end
-        if tonumber(level2) > 147 then
-            formspec = formspec.."button[2,5;1,1;;148]"
-        end
-        if tonumber(level2) > 148 then
-            formspec = formspec.."button[3,5;1,1;;149]"
-        end
-        if tonumber(level2) > 149 then
-            formspec = formspec.."button[4,5;1,1;;150]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wae;<]"
+        formspec = formspec..lvbut(125,25,level2)
         if tonumber(level2) > 150 then
             formspec = formspec.."button[2.5,6;1,1;wag;>]"
         end
@@ -999,40 +993,9 @@ w17.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-        .."button[0,1;1,1;;151]"
-        formspec = formspec.."button[1.5,6;1,1;waf;<]"
-        if tonumber(level2) > 151 then
-            formspec = formspec.."button[1,1;1,1;;152]"
-        end
-        if tonumber(level2) > 152 then
-            formspec = formspec.."button[2,1;1,1;;153]"
-        end
-        if tonumber(level2) > 153 then
-            formspec = formspec.."button[3,1;1,1;;154]"
-        end
-        if tonumber(level2) > 154 then
-            formspec = formspec.."button[4,1;1,1;;155]"
-        end
-        if tonumber(level2) > 155 then
-            formspec = formspec.."button[0,2;1,1;;156]"
-        end
-        if tonumber(level2) > 156 then
-            formspec = formspec.."button[1,2;1,1;;157]"
-        end
-        if tonumber(level2) > 157 then
-            formspec = formspec.."button[2,2;1,1;;158]"
-        end
-        if tonumber(level2) > 158 then
-            formspec = formspec.."button[3,2;1,1;;159]"
-        end
-        if tonumber(level2) > 159 then
-            formspec = formspec.."button[4,2;1,1;;160]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;waf;<]"
+        formspec = formspec..lvbut(150,10,level2)
         if tonumber(level2) > 160 then
             formspec = formspec.."label[0,3;play world 2 and 3]"
         end
@@ -1048,86 +1011,10 @@ w21.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-        .."button[0,1;1,1;;1]"
-        if tonumber(level2) > 1 then
-            formspec = formspec.."button[1,1;1,1;;2]"
-        end
-        if tonumber(level2) > 2 then
-            formspec = formspec.."button[2,1;1,1;;3]"
-        end
-        if tonumber(level2) > 3 then
-            formspec = formspec.."button[3,1;1,1;;4]"
-        end
-        if tonumber(level2) > 4 then
-            formspec = formspec.."button[4,1;1,1;;5]"
-        end
-        if tonumber(level2) > 5 then
-            formspec = formspec.."button[0,2;1,1;;6]"
-        end
-        if tonumber(level2) > 6 then
-            formspec = formspec.."button[1,2;1,1;;7]"
-        end
-        if tonumber(level2) > 7 then
-            formspec = formspec.."button[2,2;1,1;;8]"
-        end
-        if tonumber(level2) > 8 then
-            formspec = formspec.."button[3,2;1,1;;9]"
-        end
-        if tonumber(level2) > 9 then
-            formspec = formspec.."button[4,2;1,1;;10]"
-        end
-        if tonumber(level2) > 10 then
-            formspec = formspec.."button[0,3;1,1;;11]"
-        end
-        if tonumber(level2) > 11 then
-            formspec = formspec.."button[1,3;1,1;;12]"
-        end
-        if tonumber(level2) > 12 then
-            formspec = formspec.."button[2,3;1,1;;13]"
-        end
-        if tonumber(level2) > 13 then
-            formspec = formspec.."button[3,3;1,1;;14]"
-        end
-        if tonumber(level2) > 14 then
-            formspec = formspec.."button[4,3;1,1;;15]"
-        end
-        if tonumber(level2) > 15 then
-            formspec = formspec.."button[0,4;1,1;;16]"
-        end
-        if tonumber(level2) > 16 then
-            formspec = formspec.."button[1,4;1,1;;17]"
-        end
-        if tonumber(level2) > 17 then
-            formspec = formspec.."button[2,4;1,1;;18]"
-        end
-        if tonumber(level2) > 18 then
-            formspec = formspec.."button[3,4;1,1;;19]"
-        end
-        if tonumber(level2) > 19 then
-            formspec = formspec.."button[4,4;1,1;;20]"
-        end
-        if tonumber(level2) > 20 then
-            formspec = formspec.."button[0,5;1,1;;21]"
-        end
-        if tonumber(level2) > 21 then
-            formspec = formspec.."button[1,5;1,1;;22]"
-        end
-        if tonumber(level2) > 22 then
-            formspec = formspec.."button[2,5;1,1;;23]"
-        end
-        if tonumber(level2) > 23 then
-            formspec = formspec.."button[3,5;1,1;;24]"
-        end
-        if tonumber(level2) > 24 then
-            formspec = formspec.."button[4,5;1,1;;25]"
-        end
+        formspec = formspec..lvbut(0,25,level2)
         if tonumber(level2) > 25 then
-            formspec = formspec.."button[2.5,6;1,1;wab;>]"
+            formspec = formspec.."button[2.5,6;1,1;wbb;>]"
         end
 	return formspec		
 end
@@ -1141,87 +1028,11 @@ w22.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-        .."button[0,1;1,1;;26]"
-        .."button[1.5,6;1,1;waa;<]"
-        if tonumber(level2) > 26 then
-            formspec = formspec.."button[1,1;1,1;;27]"
-        end
-        if tonumber(level2) > 27 then
-            formspec = formspec.."button[2,1;1,1;;28]"
-        end
-        if tonumber(level2) > 28 then
-            formspec = formspec.."button[3,1;1,1;;29]"
-        end
-        if tonumber(level2) > 29 then
-            formspec = formspec.."button[4,1;1,1;;30]"
-        end
-        if tonumber(level2) > 30 then
-            formspec = formspec.."button[0,2;1,1;;31]"
-        end
-        if tonumber(level2) > 31 then
-            formspec = formspec.."button[1,2;1,1;;32]"
-        end
-        if tonumber(level2) > 32 then
-            formspec = formspec.."button[2,2;1,1;;33]"
-        end
-        if tonumber(level2) > 33 then
-            formspec = formspec.."button[3,2;1,1;;34]"
-        end
-        if tonumber(level2) > 34 then
-            formspec = formspec.."button[4,2;1,1;;35]"
-        end
-        if tonumber(level2) > 35 then
-            formspec = formspec.."button[0,3;1,1;;36]"
-        end
-        if tonumber(level2) > 36 then
-            formspec = formspec.."button[1,3;1,1;;37]"
-        end
-        if tonumber(level2) > 37 then
-            formspec = formspec.."button[2,3;1,1;;38]"
-        end
-        if tonumber(level2) > 38 then
-            formspec = formspec.."button[3,3;1,1;;39]"
-        end
-        if tonumber(level2) > 39 then
-            formspec = formspec.."button[4,3;1,1;;40]"
-        end
-        if tonumber(level2) > 40 then
-            formspec = formspec.."button[0,4;1,1;;41]"
-        end
-        if tonumber(level2) > 41 then
-            formspec = formspec.."button[1,4;1,1;;42]"
-        end
-        if tonumber(level2) > 42 then
-            formspec = formspec.."button[2,4;1,1;;43]"
-        end
-        if tonumber(level2) > 43 then
-            formspec = formspec.."button[3,4;1,1;;44]"
-        end
-        if tonumber(level2) > 44 then
-            formspec = formspec.."button[4,4;1,1;;45]"
-        end
-        if tonumber(level2) > 45 then
-            formspec = formspec.."button[0,5;1,1;;46]"
-        end
-        if tonumber(level2) > 46 then
-            formspec = formspec.."button[1,5;1,1;;47]"
-        end
-        if tonumber(level2) > 47 then
-            formspec = formspec.."button[2,5;1,1;;48]"
-        end
-        if tonumber(level2) > 48 then
-            formspec = formspec.."button[3,5;1,1;;49]"
-        end
-        if tonumber(level2) > 49 then
-            formspec = formspec.."button[4,5;1,1;;50]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wba;<]"
+        formspec = formspec..lvbut(25,25,level2)
         if tonumber(level2) > 50 then
-            formspec = formspec.."button[2.5,6;1,1;wac;>]"
+            formspec = formspec.."button[2.5,6;1,1;wbc;>]"
         end
 	return formspec		
 end
@@ -1235,87 +1046,11 @@ w23.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-        .."button[0,1;1,1;;51]"
-        .."button[1.5,6;1,1;wab;<]"
-        if tonumber(level2) > 51 then
-            formspec = formspec.."button[1,1;1,1;;52]"
-        end
-        if tonumber(level2) > 52 then
-            formspec = formspec.."button[2,1;1,1;;53]"
-        end
-        if tonumber(level2) > 53 then
-            formspec = formspec.."button[3,1;1,1;;54]"
-        end
-        if tonumber(level2) > 54 then
-            formspec = formspec.."button[4,1;1,1;;55]"
-        end
-        if tonumber(level2) > 55 then
-            formspec = formspec.."button[0,2;1,1;;56]"
-        end
-        if tonumber(level2) > 56 then
-            formspec = formspec.."button[1,2;1,1;;57]"
-        end
-        if tonumber(level2) > 57 then
-            formspec = formspec.."button[2,2;1,1;;58]"
-        end
-        if tonumber(level2) > 58 then
-            formspec = formspec.."button[3,2;1,1;;59]"
-        end
-        if tonumber(level2) > 59 then
-            formspec = formspec.."button[4,2;1,1;;60]"
-        end
-        if tonumber(level2) > 60 then
-            formspec = formspec.."button[0,3;1,1;;61]"
-        end
-        if tonumber(level2) > 61 then
-            formspec = formspec.."button[1,3;1,1;;62]"
-        end
-        if tonumber(level2) > 62 then
-            formspec = formspec.."button[2,3;1,1;;63]"
-        end
-        if tonumber(level2) > 63 then
-            formspec = formspec.."button[3,3;1,1;;64]"
-        end
-        if tonumber(level2) > 64 then
-            formspec = formspec.."button[4,3;1,1;;65]"
-        end
-        if tonumber(level2) > 65 then
-            formspec = formspec.."button[0,4;1,1;;66]"
-        end
-        if tonumber(level2) > 66 then
-            formspec = formspec.."button[1,4;1,1;;67]"
-        end
-        if tonumber(level2) > 67 then
-            formspec = formspec.."button[2,4;1,1;;68]"
-        end
-        if tonumber(level2) > 68 then
-            formspec = formspec.."button[3,4;1,1;;69]"
-        end
-        if tonumber(level2) > 69 then
-            formspec = formspec.."button[4,4;1,1;;70]"
-        end
-        if tonumber(level2) > 70 then
-            formspec = formspec.."button[0,5;1,1;;71]"
-        end
-        if tonumber(level2) > 71 then
-            formspec = formspec.."button[1,5;1,1;;72]"
-        end
-        if tonumber(level2) > 72 then
-            formspec = formspec.."button[2,5;1,1;;73]"
-        end
-        if tonumber(level2) > 73 then
-            formspec = formspec.."button[3,5;1,1;;74]"
-        end
-        if tonumber(level2) > 74 then
-            formspec = formspec.."button[4,5;1,1;;75]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wbb;<]"
+        formspec = formspec..lvbut(50,25,level2)
         if tonumber(level2) > 75 then
-            formspec = formspec.."button[2.5,6;1,1;wad;>]"
+            formspec = formspec.."button[2.5,6;1,1;wbd;>]"
         end
 	return formspec		
 end
@@ -1329,87 +1064,11 @@ w24.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-        .."button[0,1;1,1;;76]"
-        .."button[1.5,6;1,1;wac;<]"
-        if tonumber(level2) > 76 then
-            formspec = formspec.."button[1,1;1,1;;77]"
-        end
-        if tonumber(level2) > 77 then
-            formspec = formspec.."button[2,1;1,1;;78]"
-        end
-        if tonumber(level2) > 78 then
-            formspec = formspec.."button[3,1;1,1;;79]"
-        end
-        if tonumber(level2) > 79 then
-            formspec = formspec.."button[4,1;1,1;;80]"
-        end
-        if tonumber(level2) > 80 then
-            formspec = formspec.."button[0,2;1,1;;81]"
-        end
-        if tonumber(level2) > 81 then
-            formspec = formspec.."button[1,2;1,1;;82]"
-        end
-        if tonumber(level2) > 82 then
-            formspec = formspec.."button[2,2;1,1;;83]"
-        end
-        if tonumber(level2) > 83 then
-            formspec = formspec.."button[3,2;1,1;;84]"
-        end
-        if tonumber(level2) > 84 then
-            formspec = formspec.."button[4,2;1,1;;85]"
-        end
-        if tonumber(level2) > 85 then
-            formspec = formspec.."button[0,3;1,1;;86]"
-        end
-        if tonumber(level2) > 86 then
-            formspec = formspec.."button[1,3;1,1;;87]"
-        end
-        if tonumber(level2) > 87 then
-            formspec = formspec.."button[2,3;1,1;;88]"
-        end
-        if tonumber(level2) > 88 then
-            formspec = formspec.."button[3,3;1,1;;89]"
-        end
-        if tonumber(level2) > 89 then
-            formspec = formspec.."button[4,3;1,1;;90]"
-        end
-        if tonumber(level2) > 90 then
-            formspec = formspec.."button[0,4;1,1;;91]"
-        end
-        if tonumber(level2) > 91 then
-            formspec = formspec.."button[1,4;1,1;;92]"
-        end
-        if tonumber(level2) > 92 then
-            formspec = formspec.."button[2,4;1,1;;93]"
-        end
-        if tonumber(level2) > 93 then
-            formspec = formspec.."button[3,4;1,1;;94]"
-        end
-        if tonumber(level2) > 94 then
-            formspec = formspec.."button[4,4;1,1;;95]"
-        end
-        if tonumber(level2) > 95 then
-            formspec = formspec.."button[0,5;1,1;;96]"
-        end
-        if tonumber(level2) > 96 then
-            formspec = formspec.."button[1,5;1,1;;97]"
-        end
-        if tonumber(level2) > 97 then
-            formspec = formspec.."button[2,5;1,1;;98]"
-        end
-        if tonumber(level2) > 98 then
-            formspec = formspec.."button[3,5;1,1;;99]"
-        end
-        if tonumber(level2) > 99 then
-            formspec = formspec.."button[4,5;1,1;;100]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wbc;<]"
+        formspec = formspec..lvbut(75,25,level2)
         if tonumber(level2) > 100 then
-            formspec = formspec.."button[2.5,6;1,1;wae;>]"
+            formspec = formspec.."button[2.5,6;1,1;wbe;>]"
         end
 	return formspec		
 end
@@ -1423,87 +1082,11 @@ w25.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-        .."button[0,1;1,1;;101]"
-        .."button[1.5,6;1,1;wad;<]"
-        if tonumber(level2) > 101 then
-            formspec = formspec.."button[1,1;1,1;;102]"
-        end
-        if tonumber(level2) > 102 then
-            formspec = formspec.."button[2,1;1,1;;103]"
-        end
-        if tonumber(level2) > 103 then
-            formspec = formspec.."button[3,1;1,1;;104]"
-        end
-        if tonumber(level2) > 104 then
-            formspec = formspec.."button[4,1;1,1;;105]"
-        end
-        if tonumber(level2) > 105 then
-            formspec = formspec.."button[0,2;1,1;;106]"
-        end
-        if tonumber(level2) > 106 then
-            formspec = formspec.."button[1,2;1,1;;107]"
-        end
-        if tonumber(level2) > 107 then
-            formspec = formspec.."button[2,2;1,1;;108]"
-        end
-        if tonumber(level2) > 108 then
-            formspec = formspec.."button[3,2;1,1;;109]"
-        end
-        if tonumber(level2) > 109 then
-            formspec = formspec.."button[4,2;1,1;;110]"
-        end
-        if tonumber(level2) > 110 then
-            formspec = formspec.."button[0,3;1,1;;111]"
-        end
-        if tonumber(level2) > 111 then
-            formspec = formspec.."button[1,3;1,1;;112]"
-        end
-        if tonumber(level2) > 112 then
-            formspec = formspec.."button[2,3;1,1;;113]"
-        end
-        if tonumber(level2) > 113 then
-            formspec = formspec.."button[3,3;1,1;;114]"
-        end
-        if tonumber(level2) > 114 then
-            formspec = formspec.."button[4,3;1,1;;115]"
-        end
-        if tonumber(level2) > 115 then
-            formspec = formspec.."button[0,4;1,1;;116]"
-        end
-        if tonumber(level2) > 116 then
-            formspec = formspec.."button[1,4;1,1;;117]"
-        end
-        if tonumber(level2) > 117 then
-            formspec = formspec.."button[2,4;1,1;;118]"
-        end
-        if tonumber(level2) > 118 then
-            formspec = formspec.."button[3,4;1,1;;119]"
-        end
-        if tonumber(level2) > 119 then
-            formspec = formspec.."button[4,4;1,1;;120]"
-        end
-        if tonumber(level2) > 120 then
-            formspec = formspec.."button[0,5;1,1;;121]"
-        end
-        if tonumber(level2) > 121 then
-            formspec = formspec.."button[1,5;1,1;;122]"
-        end
-        if tonumber(level2) > 122 then
-            formspec = formspec.."button[2,5;1,1;;123]"
-        end
-        if tonumber(level2) > 123 then
-            formspec = formspec.."button[3,5;1,1;;124]"
-        end
-        if tonumber(level2) > 124 then
-            formspec = formspec.."button[4,5;1,1;;125]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wbd;<]"
+        formspec = formspec..lvbut(100,25,level2)
         if tonumber(level2) > 125 then
-            formspec = formspec.."button[2.5,6;1,1;waf;>]"
+            formspec = formspec.."button[2.5,6;1,1;wbf;>]"
         end
 	return formspec		
 end
@@ -1517,87 +1100,11 @@ w26.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-        .."button[0,1;1,1;;126]"
-        .."button[1.5,6;1,1;wae;<]"
-        if tonumber(level2) > 126 then
-            formspec = formspec.."button[1,1;1,1;;127]"
-        end
-        if tonumber(level2) > 127 then
-            formspec = formspec.."button[2,1;1,1;;128]"
-        end
-        if tonumber(level2) > 128 then
-            formspec = formspec.."button[3,1;1,1;;129]"
-        end
-        if tonumber(level2) > 129 then
-            formspec = formspec.."button[4,1;1,1;;130]"
-        end
-        if tonumber(level2) > 130 then
-            formspec = formspec.."button[0,2;1,1;;131]"
-        end
-        if tonumber(level2) > 131 then
-            formspec = formspec.."button[1,2;1,1;;132]"
-        end
-        if tonumber(level2) > 132 then
-            formspec = formspec.."button[2,2;1,1;;133]"
-        end
-        if tonumber(level2) > 133 then
-            formspec = formspec.."button[3,2;1,1;;134]"
-        end
-        if tonumber(level2) > 134 then
-            formspec = formspec.."button[4,2;1,1;;135]"
-        end
-        if tonumber(level2) > 135 then
-            formspec = formspec.."button[0,3;1,1;;136]"
-        end
-        if tonumber(level2) > 136 then
-            formspec = formspec.."button[1,3;1,1;;137]"
-        end
-        if tonumber(level2) > 137 then
-            formspec = formspec.."button[2,3;1,1;;138]"
-        end
-        if tonumber(level2) > 138 then
-            formspec = formspec.."button[3,3;1,1;;139]"
-        end
-        if tonumber(level2) > 139 then
-            formspec = formspec.."button[4,3;1,1;;140]"
-        end
-        if tonumber(level2) > 140 then
-            formspec = formspec.."button[0,4;1,1;;141]"
-        end
-        if tonumber(level2) > 141 then
-            formspec = formspec.."button[1,4;1,1;;142]"
-        end
-        if tonumber(level2) > 142 then
-            formspec = formspec.."button[2,4;1,1;;143]"
-        end
-        if tonumber(level2) > 143 then
-            formspec = formspec.."button[3,4;1,1;;144]"
-        end
-        if tonumber(level2) > 144 then
-            formspec = formspec.."button[4,4;1,1;;145]"
-        end
-        if tonumber(level2) > 145 then
-            formspec = formspec.."button[0,5;1,1;;146]"
-        end
-        if tonumber(level2) > 146 then
-            formspec = formspec.."button[1,5;1,1;;147]"
-        end
-        if tonumber(level2) > 147 then
-            formspec = formspec.."button[2,5;1,1;;148]"
-        end
-        if tonumber(level2) > 148 then
-            formspec = formspec.."button[3,5;1,1;;149]"
-        end
-        if tonumber(level2) > 149 then
-            formspec = formspec.."button[4,5;1,1;;150]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wbe;<]"
+        formspec = formspec..lvbut(125,25,level2)
         if tonumber(level2) > 150 then
-            formspec = formspec.."button[2.5,6;1,1;wag;>]"
+            formspec = formspec.."button[2.5,6;1,1;wbg;>]"
         end
 	return formspec		
 end
@@ -1611,87 +1118,11 @@ w27.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-        .."button[0,1;1,1;;151]"
-        .."button[1.5,6;1,1;waf;<]"
-        if tonumber(level2) > 151 then
-            formspec = formspec.."button[1,1;1,1;;152]"
-        end
-        if tonumber(level2) > 152 then
-            formspec = formspec.."button[2,1;1,1;;153]"
-        end
-        if tonumber(level2) > 153 then
-            formspec = formspec.."button[3,1;1,1;;154]"
-        end
-        if tonumber(level2) > 154 then
-            formspec = formspec.."button[4,1;1,1;;155]"
-        end
-        if tonumber(level2) > 155 then
-            formspec = formspec.."button[0,2;1,1;;156]"
-        end
-        if tonumber(level2) > 156 then
-            formspec = formspec.."button[1,2;1,1;;157]"
-        end
-        if tonumber(level2) > 157 then
-            formspec = formspec.."button[2,2;1,1;;158]"
-        end
-        if tonumber(level2) > 158 then
-            formspec = formspec.."button[3,2;1,1;;159]"
-        end
-        if tonumber(level2) > 159 then
-            formspec = formspec.."button[4,2;1,1;;160]"
-        end
-        if tonumber(level2) > 160 then
-            formspec = formspec.."button[0,3;1,1;;161]"
-        end
-        if tonumber(level2) > 161 then
-            formspec = formspec.."button[1,3;1,1;;162]"
-        end
-        if tonumber(level2) > 162 then
-            formspec = formspec.."button[2,3;1,1;;163]"
-        end
-        if tonumber(level2) > 163 then
-            formspec = formspec.."button[3,3;1,1;;164]"
-        end
-        if tonumber(level2) > 164 then
-            formspec = formspec.."button[4,3;1,1;;165]"
-        end
-        if tonumber(level2) > 165 then
-            formspec = formspec.."button[0,4;1,1;;166]"
-        end
-        if tonumber(level2) > 166 then
-            formspec = formspec.."button[1,4;1,1;;167]"
-        end
-        if tonumber(level2) > 167 then
-            formspec = formspec.."button[2,4;1,1;;168]"
-        end
-        if tonumber(level2) > 168 then
-            formspec = formspec.."button[3,4;1,1;;169]"
-        end
-        if tonumber(level2) > 169 then
-            formspec = formspec.."button[4,4;1,1;;170]"
-        end
-        if tonumber(level2) > 170 then
-            formspec = formspec.."button[0,5;1,1;;171]"
-        end
-        if tonumber(level2) > 171 then
-            formspec = formspec.."button[1,5;1,1;;172]"
-        end
-        if tonumber(level2) > 172 then
-            formspec = formspec.."button[2,5;1,1;;173]"
-        end
-        if tonumber(level2) > 173 then
-            formspec = formspec.."button[3,5;1,1;;174]"
-        end
-        if tonumber(level2) > 174 then
-            formspec = formspec.."button[4,5;1,1;;175]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wbf;<]"
+        formspec = formspec..lvbut(150,25,level2)
         if tonumber(level2) > 175 then
-            formspec = formspec.."button[2.5,6;1,1;wah;>]"
+            formspec = formspec.."button[2.5,6;1,1;wbh;>]"
         end
 	return formspec		
 end
@@ -1705,55 +1136,9 @@ w28.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-        .."button[0,1;1,1;;176]"
-        .."button[1.5,6;1,1;wag;<]"
-        if tonumber(level2) > 176 then
-            formspec = formspec.."button[1,1;1,1;;177]"
-        end
-        if tonumber(level2) > 177 then
-            formspec = formspec.."button[2,1;1,1;;178]"
-        end
-        if tonumber(level2) > 178 then
-            formspec = formspec.."button[3,1;1,1;;179]"
-        end
-        if tonumber(level2) > 179 then
-            formspec = formspec.."button[4,1;1,1;;180]"
-        end
-        if tonumber(level2) > 180 then
-            formspec = formspec.."button[0,2;1,1;;181]"
-        end
-        if tonumber(level2) > 181 then
-            formspec = formspec.."button[1,2;1,1;;182]"
-        end
-        if tonumber(level2) > 182 then
-            formspec = formspec.."button[2,2;1,1;;183]"
-        end
-        if tonumber(level2) > 183 then
-            formspec = formspec.."button[3,2;1,1;;184]"
-        end
-        if tonumber(level2) > 184 then
-            formspec = formspec.."button[4,2;1,1;;185]"
-        end
-        if tonumber(level2) > 185 then
-            formspec = formspec.."button[0,3;1,1;;186]"
-        end
-        if tonumber(level2) > 186 then
-            formspec = formspec.."button[1,3;1,1;;187]"
-        end
-        if tonumber(level2) > 187 then
-            formspec = formspec.."button[2,3;1,1;;188]"
-        end
-        if tonumber(level2) > 188 then
-            formspec = formspec.."button[3,3;1,1;;189]"
-        end
-        if tonumber(level2) > 189 then
-            formspec = formspec.."button[4,3;1,1;;190]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wbg;<]"
+        formspec = formspec..lvbut(175,15,level2)
         if tonumber(level2) > 190 then
             formspec = formspec.."label[0,4;play world 1 and 3]"
         end
@@ -1769,86 +1154,10 @@ w31.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;1]"
-        if tonumber(level2) > 1 then
-            formspec = formspec.."button[1,1;1,1;;2]"
-        end
-        if tonumber(level2) > 2 then
-            formspec = formspec.."button[2,1;1,1;;3]"
-        end
-        if tonumber(level2) > 3 then
-            formspec = formspec.."button[3,1;1,1;;4]"
-        end
-        if tonumber(level2) > 4 then
-            formspec = formspec.."button[4,1;1,1;;5]"
-        end
-        if tonumber(level2) > 5 then
-            formspec = formspec.."button[0,2;1,1;;6]"
-        end
-        if tonumber(level2) > 6 then
-            formspec = formspec.."button[1,2;1,1;;7]"
-        end
-        if tonumber(level2) > 7 then
-            formspec = formspec.."button[2,2;1,1;;8]"
-        end
-        if tonumber(level2) > 8 then
-            formspec = formspec.."button[3,2;1,1;;9]"
-        end
-        if tonumber(level2) > 9 then
-            formspec = formspec.."button[4,2;1,1;;10]"
-        end
-        if tonumber(level2) > 10 then
-            formspec = formspec.."button[0,3;1,1;;11]"
-        end
-        if tonumber(level2) > 11 then
-            formspec = formspec.."button[1,3;1,1;;12]"
-        end
-        if tonumber(level2) > 12 then
-            formspec = formspec.."button[2,3;1,1;;13]"
-        end
-        if tonumber(level2) > 13 then
-            formspec = formspec.."button[3,3;1,1;;14]"
-        end
-        if tonumber(level2) > 14 then
-            formspec = formspec.."button[4,3;1,1;;15]"
-        end
-        if tonumber(level2) > 15 then
-            formspec = formspec.."button[0,4;1,1;;16]"
-        end
-        if tonumber(level2) > 16 then
-            formspec = formspec.."button[1,4;1,1;;17]"
-        end
-        if tonumber(level2) > 17 then
-            formspec = formspec.."button[2,4;1,1;;18]"
-        end
-        if tonumber(level2) > 18 then
-            formspec = formspec.."button[3,4;1,1;;19]"
-        end
-        if tonumber(level2) > 19 then
-            formspec = formspec.."button[4,4;1,1;;20]"
-        end
-        if tonumber(level2) > 20 then
-            formspec = formspec.."button[0,5;1,1;;21]"
-        end
-        if tonumber(level2) > 21 then
-            formspec = formspec.."button[1,5;1,1;;22]"
-        end
-        if tonumber(level2) > 22 then
-            formspec = formspec.."button[2,5;1,1;;23]"
-        end
-        if tonumber(level2) > 23 then
-            formspec = formspec.."button[3,5;1,1;;24]"
-        end
-        if tonumber(level2) > 24 then
-            formspec = formspec.."button[4,5;1,1;;25]"
-        end
+        formspec = formspec..lvbut(0,25,level2)
         if tonumber(level2) > 25 then
-            formspec = formspec.."button[2.5,6;1,1;wab;>]"
+            formspec = formspec.."button[2.5,6;1,1;wcb;>]"
         end
 	return formspec		
 end
@@ -1862,87 +1171,11 @@ w32.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;26]"
-        .."button[1.5,6;1,1;waa;<]"
-        if tonumber(level2) > 26 then
-            formspec = formspec.."button[1,1;1,1;;27]"
-        end
-        if tonumber(level2) > 27 then
-            formspec = formspec.."button[2,1;1,1;;28]"
-        end
-        if tonumber(level2) > 28 then
-            formspec = formspec.."button[3,1;1,1;;29]"
-        end
-        if tonumber(level2) > 29 then
-            formspec = formspec.."button[4,1;1,1;;30]"
-        end
-        if tonumber(level2) > 30 then
-            formspec = formspec.."button[0,2;1,1;;31]"
-        end
-        if tonumber(level2) > 31 then
-            formspec = formspec.."button[1,2;1,1;;32]"
-        end
-        if tonumber(level2) > 32 then
-            formspec = formspec.."button[2,2;1,1;;33]"
-        end
-        if tonumber(level2) > 33 then
-            formspec = formspec.."button[3,2;1,1;;34]"
-        end
-        if tonumber(level2) > 34 then
-            formspec = formspec.."button[4,2;1,1;;35]"
-        end
-        if tonumber(level2) > 35 then
-            formspec = formspec.."button[0,3;1,1;;36]"
-        end
-        if tonumber(level2) > 36 then
-            formspec = formspec.."button[1,3;1,1;;37]"
-        end
-        if tonumber(level2) > 37 then
-            formspec = formspec.."button[2,3;1,1;;38]"
-        end
-        if tonumber(level2) > 38 then
-            formspec = formspec.."button[3,3;1,1;;39]"
-        end
-        if tonumber(level2) > 39 then
-            formspec = formspec.."button[4,3;1,1;;40]"
-        end
-        if tonumber(level2) > 40 then
-            formspec = formspec.."button[0,4;1,1;;41]"
-        end
-        if tonumber(level2) > 41 then
-            formspec = formspec.."button[1,4;1,1;;42]"
-        end
-        if tonumber(level2) > 42 then
-            formspec = formspec.."button[2,4;1,1;;43]"
-        end
-        if tonumber(level2) > 43 then
-            formspec = formspec.."button[3,4;1,1;;44]"
-        end
-        if tonumber(level2) > 44 then
-            formspec = formspec.."button[4,4;1,1;;45]"
-        end
-        if tonumber(level2) > 45 then
-            formspec = formspec.."button[0,5;1,1;;46]"
-        end
-        if tonumber(level2) > 46 then
-            formspec = formspec.."button[1,5;1,1;;47]"
-        end
-        if tonumber(level2) > 47 then
-            formspec = formspec.."button[2,5;1,1;;48]"
-        end
-        if tonumber(level2) > 48 then
-            formspec = formspec.."button[3,5;1,1;;49]"
-        end
-        if tonumber(level2) > 49 then
-            formspec = formspec.."button[4,5;1,1;;50]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wca;<]"
+        formspec = formspec..lvbut(25,25,level2)
         if tonumber(level2) > 50 then
-            formspec = formspec.."button[2.5,6;1,1;wac;>]"
+            formspec = formspec.."button[2.5,6;1,1;wcc;>]"
         end
 	return formspec		
 end
@@ -1956,87 +1189,11 @@ w33.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;51]"
-        .."button[1.5,6;1,1;wab;<]"
-        if tonumber(level2) > 51 then
-            formspec = formspec.."button[1,1;1,1;;52]"
-        end
-        if tonumber(level2) > 52 then
-            formspec = formspec.."button[2,1;1,1;;53]"
-        end
-        if tonumber(level2) > 53 then
-            formspec = formspec.."button[3,1;1,1;;54]"
-        end
-        if tonumber(level2) > 54 then
-            formspec = formspec.."button[4,1;1,1;;55]"
-        end
-        if tonumber(level2) > 55 then
-            formspec = formspec.."button[0,2;1,1;;56]"
-        end
-        if tonumber(level2) > 56 then
-            formspec = formspec.."button[1,2;1,1;;57]"
-        end
-        if tonumber(level2) > 57 then
-            formspec = formspec.."button[2,2;1,1;;58]"
-        end
-        if tonumber(level2) > 58 then
-            formspec = formspec.."button[3,2;1,1;;59]"
-        end
-        if tonumber(level2) > 59 then
-            formspec = formspec.."button[4,2;1,1;;60]"
-        end
-        if tonumber(level2) > 60 then
-            formspec = formspec.."button[0,3;1,1;;61]"
-        end
-        if tonumber(level2) > 61 then
-            formspec = formspec.."button[1,3;1,1;;62]"
-        end
-        if tonumber(level2) > 62 then
-            formspec = formspec.."button[2,3;1,1;;63]"
-        end
-        if tonumber(level2) > 63 then
-            formspec = formspec.."button[3,3;1,1;;64]"
-        end
-        if tonumber(level2) > 64 then
-            formspec = formspec.."button[4,3;1,1;;65]"
-        end
-        if tonumber(level2) > 65 then
-            formspec = formspec.."button[0,4;1,1;;66]"
-        end
-        if tonumber(level2) > 66 then
-            formspec = formspec.."button[1,4;1,1;;67]"
-        end
-        if tonumber(level2) > 67 then
-            formspec = formspec.."button[2,4;1,1;;68]"
-        end
-        if tonumber(level2) > 68 then
-            formspec = formspec.."button[3,4;1,1;;69]"
-        end
-        if tonumber(level2) > 69 then
-            formspec = formspec.."button[4,4;1,1;;70]"
-        end
-        if tonumber(level2) > 70 then
-            formspec = formspec.."button[0,5;1,1;;71]"
-        end
-        if tonumber(level2) > 71 then
-            formspec = formspec.."button[1,5;1,1;;72]"
-        end
-        if tonumber(level2) > 72 then
-            formspec = formspec.."button[2,5;1,1;;73]"
-        end
-        if tonumber(level2) > 73 then
-            formspec = formspec.."button[3,5;1,1;;74]"
-        end
-        if tonumber(level2) > 74 then
-            formspec = formspec.."button[4,5;1,1;;75]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wcb;<]"
+        formspec = formspec..lvbut(50,25,level2)
         if tonumber(level2) > 75 then
-            formspec = formspec.."button[2.5,6;1,1;wad;>]"
+            formspec = formspec.."button[2.5,6;1,1;wcd;>]"
         end
 	return formspec		
 end
@@ -2050,87 +1207,11 @@ w34.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;76]"
-        .."button[1.5,6;1,1;wac;<]"
-        if tonumber(level2) > 76 then
-            formspec = formspec.."button[1,1;1,1;;77]"
-        end
-        if tonumber(level2) > 77 then
-            formspec = formspec.."button[2,1;1,1;;78]"
-        end
-        if tonumber(level2) > 78 then
-            formspec = formspec.."button[3,1;1,1;;79]"
-        end
-        if tonumber(level2) > 79 then
-            formspec = formspec.."button[4,1;1,1;;80]"
-        end
-        if tonumber(level2) > 80 then
-            formspec = formspec.."button[0,2;1,1;;81]"
-        end
-        if tonumber(level2) > 81 then
-            formspec = formspec.."button[1,2;1,1;;82]"
-        end
-        if tonumber(level2) > 82 then
-            formspec = formspec.."button[2,2;1,1;;83]"
-        end
-        if tonumber(level2) > 83 then
-            formspec = formspec.."button[3,2;1,1;;84]"
-        end
-        if tonumber(level2) > 84 then
-            formspec = formspec.."button[4,2;1,1;;85]"
-        end
-        if tonumber(level2) > 85 then
-            formspec = formspec.."button[0,3;1,1;;86]"
-        end
-        if tonumber(level2) > 86 then
-            formspec = formspec.."button[1,3;1,1;;87]"
-        end
-        if tonumber(level2) > 87 then
-            formspec = formspec.."button[2,3;1,1;;88]"
-        end
-        if tonumber(level2) > 88 then
-            formspec = formspec.."button[3,3;1,1;;89]"
-        end
-        if tonumber(level2) > 89 then
-            formspec = formspec.."button[4,3;1,1;;90]"
-        end
-        if tonumber(level2) > 90 then
-            formspec = formspec.."button[0,4;1,1;;91]"
-        end
-        if tonumber(level2) > 91 then
-            formspec = formspec.."button[1,4;1,1;;92]"
-        end
-        if tonumber(level2) > 92 then
-            formspec = formspec.."button[2,4;1,1;;93]"
-        end
-        if tonumber(level2) > 93 then
-            formspec = formspec.."button[3,4;1,1;;94]"
-        end
-        if tonumber(level2) > 94 then
-            formspec = formspec.."button[4,4;1,1;;95]"
-        end
-        if tonumber(level2) > 95 then
-            formspec = formspec.."button[0,5;1,1;;96]"
-        end
-        if tonumber(level2) > 96 then
-            formspec = formspec.."button[1,5;1,1;;97]"
-        end
-        if tonumber(level2) > 97 then
-            formspec = formspec.."button[2,5;1,1;;98]"
-        end
-        if tonumber(level2) > 98 then
-            formspec = formspec.."button[3,5;1,1;;99]"
-        end
-        if tonumber(level2) > 99 then
-            formspec = formspec.."button[4,5;1,1;;100]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wcc;<]"
+        formspec = formspec..lvbut(75,25,level2)
         if tonumber(level2) > 100 then
-            formspec = formspec.."button[2.5,6;1,1;wae;>]"
+            formspec = formspec.."button[2.5,6;1,1;wce;>]"
         end
 	return formspec		
 end
@@ -2144,87 +1225,11 @@ w35.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;101]"
-        .."button[1.5,6;1,1;wad;<]"
-        if tonumber(level2) > 101 then
-            formspec = formspec.."button[1,1;1,1;;102]"
-        end
-        if tonumber(level2) > 102 then
-            formspec = formspec.."button[2,1;1,1;;103]"
-        end
-        if tonumber(level2) > 103 then
-            formspec = formspec.."button[3,1;1,1;;104]"
-        end
-        if tonumber(level2) > 104 then
-            formspec = formspec.."button[4,1;1,1;;105]"
-        end
-        if tonumber(level2) > 105 then
-            formspec = formspec.."button[0,2;1,1;;106]"
-        end
-        if tonumber(level2) > 106 then
-            formspec = formspec.."button[1,2;1,1;;107]"
-        end
-        if tonumber(level2) > 107 then
-            formspec = formspec.."button[2,2;1,1;;108]"
-        end
-        if tonumber(level2) > 108 then
-            formspec = formspec.."button[3,2;1,1;;109]"
-        end
-        if tonumber(level2) > 109 then
-            formspec = formspec.."button[4,2;1,1;;110]"
-        end
-        if tonumber(level2) > 110 then
-            formspec = formspec.."button[0,3;1,1;;111]"
-        end
-        if tonumber(level2) > 111 then
-            formspec = formspec.."button[1,3;1,1;;112]"
-        end
-        if tonumber(level2) > 112 then
-            formspec = formspec.."button[2,3;1,1;;113]"
-        end
-        if tonumber(level2) > 113 then
-            formspec = formspec.."button[3,3;1,1;;114]"
-        end
-        if tonumber(level2) > 114 then
-            formspec = formspec.."button[4,3;1,1;;115]"
-        end
-        if tonumber(level2) > 115 then
-            formspec = formspec.."button[0,4;1,1;;116]"
-        end
-        if tonumber(level2) > 116 then
-            formspec = formspec.."button[1,4;1,1;;117]"
-        end
-        if tonumber(level2) > 117 then
-            formspec = formspec.."button[2,4;1,1;;118]"
-        end
-        if tonumber(level2) > 118 then
-            formspec = formspec.."button[3,4;1,1;;119]"
-        end
-        if tonumber(level2) > 119 then
-            formspec = formspec.."button[4,4;1,1;;120]"
-        end
-        if tonumber(level2) > 120 then
-            formspec = formspec.."button[0,5;1,1;;121]"
-        end
-        if tonumber(level2) > 121 then
-            formspec = formspec.."button[1,5;1,1;;122]"
-        end
-        if tonumber(level2) > 122 then
-            formspec = formspec.."button[2,5;1,1;;123]"
-        end
-        if tonumber(level2) > 123 then
-            formspec = formspec.."button[3,5;1,1;;124]"
-        end
-        if tonumber(level2) > 124 then
-            formspec = formspec.."button[4,5;1,1;;125]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wcd;<]"
+        formspec = formspec..lvbut(100,25,level2)
         if tonumber(level2) > 125 then
-            formspec = formspec.."button[2.5,6;1,1;waf;>]"
+            formspec = formspec.."button[2.5,6;1,1;wcf;>]"
         end
 	return formspec		
 end
@@ -2238,87 +1243,11 @@ w36.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;126]"
-        .."button[1.5,6;1,1;wae;<]"
-        if tonumber(level2) > 126 then
-            formspec = formspec.."button[1,1;1,1;;127]"
-        end
-        if tonumber(level2) > 127 then
-            formspec = formspec.."button[2,1;1,1;;128]"
-        end
-        if tonumber(level2) > 128 then
-            formspec = formspec.."button[3,1;1,1;;129]"
-        end
-        if tonumber(level2) > 129 then
-            formspec = formspec.."button[4,1;1,1;;130]"
-        end
-        if tonumber(level2) > 130 then
-            formspec = formspec.."button[0,2;1,1;;131]"
-        end
-        if tonumber(level2) > 131 then
-            formspec = formspec.."button[1,2;1,1;;132]"
-        end
-        if tonumber(level2) > 132 then
-            formspec = formspec.."button[2,2;1,1;;133]"
-        end
-        if tonumber(level2) > 133 then
-            formspec = formspec.."button[3,2;1,1;;134]"
-        end
-        if tonumber(level2) > 134 then
-            formspec = formspec.."button[4,2;1,1;;135]"
-        end
-        if tonumber(level2) > 135 then
-            formspec = formspec.."button[0,3;1,1;;136]"
-        end
-        if tonumber(level2) > 136 then
-            formspec = formspec.."button[1,3;1,1;;137]"
-        end
-        if tonumber(level2) > 137 then
-            formspec = formspec.."button[2,3;1,1;;138]"
-        end
-        if tonumber(level2) > 138 then
-            formspec = formspec.."button[3,3;1,1;;139]"
-        end
-        if tonumber(level2) > 139 then
-            formspec = formspec.."button[4,3;1,1;;140]"
-        end
-        if tonumber(level2) > 140 then
-            formspec = formspec.."button[0,4;1,1;;141]"
-        end
-        if tonumber(level2) > 141 then
-            formspec = formspec.."button[1,4;1,1;;142]"
-        end
-        if tonumber(level2) > 142 then
-            formspec = formspec.."button[2,4;1,1;;143]"
-        end
-        if tonumber(level2) > 143 then
-            formspec = formspec.."button[3,4;1,1;;144]"
-        end
-        if tonumber(level2) > 144 then
-            formspec = formspec.."button[4,4;1,1;;145]"
-        end
-        if tonumber(level2) > 145 then
-            formspec = formspec.."button[0,5;1,1;;146]"
-        end
-        if tonumber(level2) > 146 then
-            formspec = formspec.."button[1,5;1,1;;147]"
-        end
-        if tonumber(level2) > 147 then
-            formspec = formspec.."button[2,5;1,1;;148]"
-        end
-        if tonumber(level2) > 148 then
-            formspec = formspec.."button[3,5;1,1;;149]"
-        end
-        if tonumber(level2) > 149 then
-            formspec = formspec.."button[4,5;1,1;;150]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wce;<]"
+        formspec = formspec..lvbut(125,25,level2)
         if tonumber(level2) > 150 then
-            formspec = formspec.."button[2.5,6;1,1;wag;>]"
+            formspec = formspec.."button[2.5,6;1,1;wcg;>]"
         end
 	return formspec		
 end
@@ -2332,87 +1261,11 @@ w37.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;151]"
-        .."button[1.5,6;1,1;waf;<]"
-        if tonumber(level2) > 151 then
-            formspec = formspec.."button[1,1;1,1;;152]"
-        end
-        if tonumber(level2) > 152 then
-            formspec = formspec.."button[2,1;1,1;;153]"
-        end
-        if tonumber(level2) > 153 then
-            formspec = formspec.."button[3,1;1,1;;154]"
-        end
-        if tonumber(level2) > 154 then
-            formspec = formspec.."button[4,1;1,1;;155]"
-        end
-        if tonumber(level2) > 155 then
-            formspec = formspec.."button[0,2;1,1;;156]"
-        end
-        if tonumber(level2) > 156 then
-            formspec = formspec.."button[1,2;1,1;;157]"
-        end
-        if tonumber(level2) > 157 then
-            formspec = formspec.."button[2,2;1,1;;158]"
-        end
-        if tonumber(level2) > 158 then
-            formspec = formspec.."button[3,2;1,1;;159]"
-        end
-        if tonumber(level2) > 159 then
-            formspec = formspec.."button[4,2;1,1;;160]"
-        end
-        if tonumber(level2) > 160 then
-            formspec = formspec.."button[0,3;1,1;;161]"
-        end
-        if tonumber(level2) > 161 then
-            formspec = formspec.."button[1,3;1,1;;162]"
-        end
-        if tonumber(level2) > 162 then
-            formspec = formspec.."button[2,3;1,1;;163]"
-        end
-        if tonumber(level2) > 163 then
-            formspec = formspec.."button[3,3;1,1;;164]"
-        end
-        if tonumber(level2) > 164 then
-            formspec = formspec.."button[4,3;1,1;;165]"
-        end
-        if tonumber(level2) > 165 then
-            formspec = formspec.."button[0,4;1,1;;166]"
-        end
-        if tonumber(level2) > 166 then
-            formspec = formspec.."button[1,4;1,1;;167]"
-        end
-        if tonumber(level2) > 167 then
-            formspec = formspec.."button[2,4;1,1;;168]"
-        end
-        if tonumber(level2) > 168 then
-            formspec = formspec.."button[3,4;1,1;;169]"
-        end
-        if tonumber(level2) > 169 then
-            formspec = formspec.."button[4,4;1,1;;170]"
-        end
-        if tonumber(level2) > 170 then
-            formspec = formspec.."button[0,5;1,1;;171]"
-        end
-        if tonumber(level2) > 171 then
-            formspec = formspec.."button[1,5;1,1;;172]"
-        end
-        if tonumber(level2) > 172 then
-            formspec = formspec.."button[2,5;1,1;;173]"
-        end
-        if tonumber(level2) > 173 then
-            formspec = formspec.."button[3,5;1,1;;174]"
-        end
-        if tonumber(level2) > 174 then
-            formspec = formspec.."button[4,5;1,1;;175]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wcf;<]"
+        formspec = formspec..lvbut(150,25,level2)
         if tonumber(level2) > 175 then
-            formspec = formspec.."button[2.5,6;1,1;wah;>]"
+            formspec = formspec.."button[2.5,6;1,1;wch;>]"
         end
 	return formspec		
 end
@@ -2426,87 +1279,11 @@ w38.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;176]"
-        .."button[1.5,6;1,1;wag;<]"
-        if tonumber(level2) > 176 then
-            formspec = formspec.."button[1,1;1,1;;177]"
-        end
-        if tonumber(level2) > 177 then
-            formspec = formspec.."button[2,1;1,1;;178]"
-        end
-        if tonumber(level2) > 178 then
-            formspec = formspec.."button[3,1;1,1;;179]"
-        end
-        if tonumber(level2) > 179 then
-            formspec = formspec.."button[4,1;1,1;;180]"
-        end
-        if tonumber(level2) > 180 then
-            formspec = formspec.."button[0,2;1,1;;181]"
-        end
-        if tonumber(level2) > 181 then
-            formspec = formspec.."button[1,2;1,1;;182]"
-        end
-        if tonumber(level2) > 182 then
-            formspec = formspec.."button[2,2;1,1;;183]"
-        end
-        if tonumber(level2) > 183 then
-            formspec = formspec.."button[3,2;1,1;;184]"
-        end
-        if tonumber(level2) > 184 then
-            formspec = formspec.."button[4,2;1,1;;185]"
-        end
-        if tonumber(level2) > 185 then
-            formspec = formspec.."button[0,3;1,1;;186]"
-        end
-        if tonumber(level2) > 186 then
-            formspec = formspec.."button[1,3;1,1;;187]"
-        end
-        if tonumber(level2) > 187 then
-            formspec = formspec.."button[2,3;1,1;;188]"
-        end
-        if tonumber(level2) > 188 then
-            formspec = formspec.."button[3,3;1,1;;189]"
-        end
-        if tonumber(level2) > 189 then
-            formspec = formspec.."button[4,3;1,1;;190]"
-        end
-        if tonumber(level2) > 190 then
-            formspec = formspec.."button[0,4;1,1;;191]"
-        end
-        if tonumber(level2) > 191 then
-            formspec = formspec.."button[1,4;1,1;;192]"
-        end
-        if tonumber(level2) > 192 then
-            formspec = formspec.."button[2,4;1,1;;193]"
-        end
-        if tonumber(level2) > 193 then
-            formspec = formspec.."button[3,4;1,1;;194]"
-        end
-        if tonumber(level2) > 194 then
-            formspec = formspec.."button[4,4;1,1;;195]"
-        end
-        if tonumber(level2) > 195 then
-            formspec = formspec.."button[0,5;1,1;;196]"
-        end
-        if tonumber(level2) > 196 then
-            formspec = formspec.."button[1,5;1,1;;197]"
-        end
-        if tonumber(level2) > 197 then
-            formspec = formspec.."button[2,5;1,1;;198]"
-        end
-        if tonumber(level2) > 198 then
-            formspec = formspec.."button[3,5;1,1;;199]"
-        end
-        if tonumber(level2) > 199 then
-            formspec = formspec.."button[4,5;1,1;;200]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wcg;<]"
+        formspec = formspec..lvbut(175,25,level2)
         if tonumber(level2) > 200 then
-            formspec = formspec.."button[2.5,6;1,1;wai;>]"
+            formspec = formspec.."button[2.5,6;1,1;wci;>]"
         end
 	return formspec		
 end
@@ -2520,87 +1297,11 @@ w39.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;201]"
-        .."button[1.5,6;1,1;wah;<]"
-        if tonumber(level2) > 201 then
-            formspec = formspec.."button[1,1;1,1;;202]"
-        end
-        if tonumber(level2) > 202 then
-            formspec = formspec.."button[2,1;1,1;;203]"
-        end
-        if tonumber(level2) > 203 then
-            formspec = formspec.."button[3,1;1,1;;204]"
-        end
-        if tonumber(level2) > 204 then
-            formspec = formspec.."button[4,1;1,1;;205]"
-        end
-        if tonumber(level2) > 205 then
-            formspec = formspec.."button[0,2;1,1;;206]"
-        end
-        if tonumber(level2) > 206 then
-            formspec = formspec.."button[1,2;1,1;;207]"
-        end
-        if tonumber(level2) > 207 then
-            formspec = formspec.."button[2,2;1,1;;208]"
-        end
-        if tonumber(level2) > 208 then
-            formspec = formspec.."button[3,2;1,1;;209]"
-        end
-        if tonumber(level2) > 209 then
-            formspec = formspec.."button[4,2;1,1;;210]"
-        end
-        if tonumber(level2) > 210 then
-            formspec = formspec.."button[0,3;1,1;;211]"
-        end
-        if tonumber(level2) > 211 then
-            formspec = formspec.."button[1,3;1,1;;212]"
-        end
-        if tonumber(level2) > 212 then
-            formspec = formspec.."button[2,3;1,1;;213]"
-        end
-        if tonumber(level2) > 213 then
-            formspec = formspec.."button[3,3;1,1;;214]"
-        end
-        if tonumber(level2) > 214 then
-            formspec = formspec.."button[4,3;1,1;;215]"
-        end
-        if tonumber(level2) > 215 then
-            formspec = formspec.."button[0,4;1,1;;216]"
-        end
-        if tonumber(level2) > 216 then
-            formspec = formspec.."button[1,4;1,1;;217]"
-        end
-        if tonumber(level2) > 217 then
-            formspec = formspec.."button[2,4;1,1;;218]"
-        end
-        if tonumber(level2) > 218 then
-            formspec = formspec.."button[3,4;1,1;;219]"
-        end
-        if tonumber(level2) > 219 then
-            formspec = formspec.."button[4,4;1,1;;220]"
-        end
-        if tonumber(level2) > 220 then
-            formspec = formspec.."button[0,5;1,1;;221]"
-        end
-        if tonumber(level2) > 221 then
-            formspec = formspec.."button[1,5;1,1;;222]"
-        end
-        if tonumber(level2) > 222 then
-            formspec = formspec.."button[2,5;1,1;;223]"
-        end
-        if tonumber(level2) > 223 then
-            formspec = formspec.."button[3,5;1,1;;224]"
-        end
-        if tonumber(level2) > 224 then
-            formspec = formspec.."button[4,5;1,1;;225]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wch;<]"
+        formspec = formspec..lvbut(200,25,level2)
         if tonumber(level2) > 225 then
-            formspec = formspec.."button[2.5,6;1,1;waj;>]"
+            formspec = formspec.."button[2.5,6;1,1;wcj;>]"
         end
 	return formspec		
 end
@@ -2614,87 +1315,11 @@ w310.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;226]"
-        .."button[1.5,6;1,1;wai;<]"
-        if tonumber(level2) > 226 then
-            formspec = formspec.."button[1,1;1,1;;227]"
-        end
-        if tonumber(level2) > 227 then
-            formspec = formspec.."button[2,1;1,1;;228]"
-        end
-        if tonumber(level2) > 228 then
-            formspec = formspec.."button[3,1;1,1;;229]"
-        end
-        if tonumber(level2) > 229 then
-            formspec = formspec.."button[4,1;1,1;;230]"
-        end
-        if tonumber(level2) > 230 then
-            formspec = formspec.."button[0,2;1,1;;231]"
-        end
-        if tonumber(level2) > 231 then
-            formspec = formspec.."button[1,2;1,1;;232]"
-        end
-        if tonumber(level2) > 232 then
-            formspec = formspec.."button[2,2;1,1;;233]"
-        end
-        if tonumber(level2) > 233 then
-            formspec = formspec.."button[3,2;1,1;;234]"
-        end
-        if tonumber(level2) > 234 then
-            formspec = formspec.."button[4,2;1,1;;235]"
-        end
-        if tonumber(level2) > 235 then
-            formspec = formspec.."button[0,3;1,1;;236]"
-        end
-        if tonumber(level2) > 236 then
-            formspec = formspec.."button[1,3;1,1;;237]"
-        end
-        if tonumber(level2) > 237 then
-            formspec = formspec.."button[2,3;1,1;;238]"
-        end
-        if tonumber(level2) > 238 then
-            formspec = formspec.."button[3,3;1,1;;239]"
-        end
-        if tonumber(level2) > 239 then
-            formspec = formspec.."button[4,3;1,1;;240]"
-        end
-        if tonumber(level2) > 240 then
-            formspec = formspec.."button[0,4;1,1;;241]"
-        end
-        if tonumber(level2) > 241 then
-            formspec = formspec.."button[1,4;1,1;;242]"
-        end
-        if tonumber(level2) > 242 then
-            formspec = formspec.."button[2,4;1,1;;243]"
-        end
-        if tonumber(level2) > 243 then
-            formspec = formspec.."button[3,4;1,1;;244]"
-        end
-        if tonumber(level2) > 244 then
-            formspec = formspec.."button[4,4;1,1;;245]"
-        end
-        if tonumber(level2) > 245 then
-            formspec = formspec.."button[0,5;1,1;;246]"
-        end
-        if tonumber(level2) > 246 then
-            formspec = formspec.."button[1,5;1,1;;247]"
-        end
-        if tonumber(level2) > 247 then
-            formspec = formspec.."button[2,5;1,1;;248]"
-        end
-        if tonumber(level2) > 248 then
-            formspec = formspec.."button[3,5;1,1;;249]"
-        end
-        if tonumber(level2) > 249 then
-            formspec = formspec.."button[4,5;1,1;;250]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wci;<]"
+        formspec = formspec..lvbut(225,25,level2)
         if tonumber(level2) > 250 then
-            formspec = formspec.."button[2.5,6;1,1;wak;>]"
+            formspec = formspec.."button[2.5,6;1,1;wck;>]"
         end
 	return formspec		
 end
@@ -2708,87 +1333,11 @@ w311.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;251]"
-        .."button[1.5,6;1,1;waj;<]"
-        if tonumber(level2) > 251 then
-            formspec = formspec.."button[1,1;1,1;;252]"
-        end
-        if tonumber(level2) > 252 then
-            formspec = formspec.."button[2,1;1,1;;253]"
-        end
-        if tonumber(level2) > 253 then
-            formspec = formspec.."button[3,1;1,1;;254]"
-        end
-        if tonumber(level2) > 254 then
-            formspec = formspec.."button[4,1;1,1;;255]"
-        end
-        if tonumber(level2) > 255 then
-            formspec = formspec.."button[0,2;1,1;;256]"
-        end
-        if tonumber(level2) > 256 then
-            formspec = formspec.."button[1,2;1,1;;257]"
-        end
-        if tonumber(level2) > 257 then
-            formspec = formspec.."button[2,2;1,1;;258]"
-        end
-        if tonumber(level2) > 258 then
-            formspec = formspec.."button[3,2;1,1;;259]"
-        end
-        if tonumber(level2) > 259 then
-            formspec = formspec.."button[4,2;1,1;;260]"
-        end
-        if tonumber(level2) > 260 then
-            formspec = formspec.."button[0,3;1,1;;261]"
-        end
-        if tonumber(level2) > 261 then
-            formspec = formspec.."button[1,3;1,1;;262]"
-        end
-        if tonumber(level2) > 262 then
-            formspec = formspec.."button[2,3;1,1;;263]"
-        end
-        if tonumber(level2) > 263 then
-            formspec = formspec.."button[3,3;1,1;;264]"
-        end
-        if tonumber(level2) > 264 then
-            formspec = formspec.."button[4,3;1,1;;265]"
-        end
-        if tonumber(level2) > 265 then
-            formspec = formspec.."button[0,4;1,1;;266]"
-        end
-        if tonumber(level2) > 266 then
-            formspec = formspec.."button[1,4;1,1;;267]"
-        end
-        if tonumber(level2) > 267 then
-            formspec = formspec.."button[2,4;1,1;;268]"
-        end
-        if tonumber(level2) > 268 then
-            formspec = formspec.."button[3,4;1,1;;269]"
-        end
-        if tonumber(level2) > 269 then
-            formspec = formspec.."button[4,4;1,1;;270]"
-        end
-        if tonumber(level2) > 270 then
-            formspec = formspec.."button[0,5;1,1;;271]"
-        end
-        if tonumber(level2) > 271 then
-            formspec = formspec.."button[1,5;1,1;;272]"
-        end
-        if tonumber(level2) > 272 then
-            formspec = formspec.."button[2,5;1,1;;273]"
-        end
-        if tonumber(level2) > 273 then
-            formspec = formspec.."button[3,5;1,1;;274]"
-        end
-        if tonumber(level2) > 274 then
-            formspec = formspec.."button[4,5;1,1;;275]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wcj;<]"
+        formspec = formspec..lvbut(250,25,level2)
         if tonumber(level2) > 275 then
-            formspec = formspec.."button[2.5,6;1,1;wal;>]"
+            formspec = formspec.."button[2.5,6;1,1;wcl;>]"
         end
 	return formspec		
 end
@@ -2802,87 +1351,11 @@ w312.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;276]"
-        .."button[1.5,6;1,1;wak;<]"
-        if tonumber(level2) > 276 then
-            formspec = formspec.."button[1,1;1,1;;277]"
-        end
-        if tonumber(level2) > 277 then
-            formspec = formspec.."button[2,1;1,1;;278]"
-        end
-        if tonumber(level2) > 278 then
-            formspec = formspec.."button[3,1;1,1;;279]"
-        end
-        if tonumber(level2) > 279 then
-            formspec = formspec.."button[4,1;1,1;;280]"
-        end
-        if tonumber(level2) > 280 then
-            formspec = formspec.."button[0,2;1,1;;281]"
-        end
-        if tonumber(level2) > 281 then
-            formspec = formspec.."button[1,2;1,1;;282]"
-        end
-        if tonumber(level2) > 282 then
-            formspec = formspec.."button[2,2;1,1;;283]"
-        end
-        if tonumber(level2) > 283 then
-            formspec = formspec.."button[3,2;1,1;;284]"
-        end
-        if tonumber(level2) > 284 then
-            formspec = formspec.."button[4,2;1,1;;285]"
-        end
-        if tonumber(level2) > 285 then
-            formspec = formspec.."button[0,3;1,1;;286]"
-        end
-        if tonumber(level2) > 286 then
-            formspec = formspec.."button[1,3;1,1;;287]"
-        end
-        if tonumber(level2) > 287 then
-            formspec = formspec.."button[2,3;1,1;;288]"
-        end
-        if tonumber(level2) > 288 then
-            formspec = formspec.."button[3,3;1,1;;289]"
-        end
-        if tonumber(level2) > 289 then
-            formspec = formspec.."button[4,3;1,1;;290]"
-        end
-        if tonumber(level2) > 290 then
-            formspec = formspec.."button[0,4;1,1;;291]"
-        end
-        if tonumber(level2) > 291 then
-            formspec = formspec.."button[1,4;1,1;;292]"
-        end
-        if tonumber(level2) > 292 then
-            formspec = formspec.."button[2,4;1,1;;293]"
-        end
-        if tonumber(level2) > 293 then
-            formspec = formspec.."button[3,4;1,1;;294]"
-        end
-        if tonumber(level2) > 294 then
-            formspec = formspec.."button[4,4;1,1;;295]"
-        end
-        if tonumber(level2) > 295 then
-            formspec = formspec.."button[0,5;1,1;;296]"
-        end
-        if tonumber(level2) > 296 then
-            formspec = formspec.."button[1,5;1,1;;297]"
-        end
-        if tonumber(level2) > 297 then
-            formspec = formspec.."button[2,5;1,1;;298]"
-        end
-        if tonumber(level2) > 298 then
-            formspec = formspec.."button[3,5;1,1;;299]"
-        end
-        if tonumber(level2) > 299 then
-            formspec = formspec.."button[4,5;1,1;;300]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wck;<]"
+        formspec = formspec..lvbut(275,25,level2)
         if tonumber(level2) > 300 then
-            formspec = formspec.."button[2.5,6;1,1;wam;>]"
+            formspec = formspec.."button[2.5,6;1,1;wcm;>]"
         end
 	return formspec		
 end
@@ -2896,87 +1369,11 @@ w313.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;301]"
-        .."button[1.5,6;1,1;wal;<]"
-        if tonumber(level2) > 301 then
-            formspec = formspec.."button[1,1;1,1;;302]"
-        end
-        if tonumber(level2) > 302 then
-            formspec = formspec.."button[2,1;1,1;;303]"
-        end
-        if tonumber(level2) > 303 then
-            formspec = formspec.."button[3,1;1,1;;304]"
-        end
-        if tonumber(level2) > 304 then
-            formspec = formspec.."button[4,1;1,1;;305]"
-        end
-        if tonumber(level2) > 305 then
-            formspec = formspec.."button[0,2;1,1;;306]"
-        end
-        if tonumber(level2) > 306 then
-            formspec = formspec.."button[1,2;1,1;;307]"
-        end
-        if tonumber(level2) > 307 then
-            formspec = formspec.."button[2,2;1,1;;308]"
-        end
-        if tonumber(level2) > 308 then
-            formspec = formspec.."button[3,2;1,1;;309]"
-        end
-        if tonumber(level2) > 309 then
-            formspec = formspec.."button[4,2;1,1;;310]"
-        end
-        if tonumber(level2) > 310 then
-            formspec = formspec.."button[0,3;1,1;;311]"
-        end
-        if tonumber(level2) > 311 then
-            formspec = formspec.."button[1,3;1,1;;312]"
-        end
-        if tonumber(level2) > 312 then
-            formspec = formspec.."button[2,3;1,1;;313]"
-        end
-        if tonumber(level2) > 313 then
-            formspec = formspec.."button[3,3;1,1;;314]"
-        end
-        if tonumber(level2) > 314 then
-            formspec = formspec.."button[4,3;1,1;;315]"
-        end
-        if tonumber(level2) > 315 then
-            formspec = formspec.."button[0,4;1,1;;316]"
-        end
-        if tonumber(level2) > 316 then
-            formspec = formspec.."button[1,4;1,1;;317]"
-        end
-        if tonumber(level2) > 317 then
-            formspec = formspec.."button[2,4;1,1;;318]"
-        end
-        if tonumber(level2) > 318 then
-            formspec = formspec.."button[3,4;1,1;;319]"
-        end
-        if tonumber(level2) > 319 then
-            formspec = formspec.."button[4,4;1,1;;320]"
-        end
-        if tonumber(level2) > 320 then
-            formspec = formspec.."button[0,5;1,1;;321]"
-        end
-        if tonumber(level2) > 321 then
-            formspec = formspec.."button[1,5;1,1;;322]"
-        end
-        if tonumber(level2) > 322 then
-            formspec = formspec.."button[2,5;1,1;;323]"
-        end
-        if tonumber(level2) > 323 then
-            formspec = formspec.."button[3,5;1,1;;324]"
-        end
-        if tonumber(level2) > 324 then
-            formspec = formspec.."button[4,5;1,1;;325]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wcl;<]"
+        formspec = formspec..lvbut(300,25,level2)
         if tonumber(level2) > 325 then
-            formspec = formspec.."button[2.5,6;1,1;wan;>]"
+            formspec = formspec.."button[2.5,6;1,1;wcn;>]"
         end
 	return formspec		
 end
@@ -2990,36 +1387,82 @@ w314.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."background[5,6.5;1,1;gui_formbg.png;true]"
-        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
-        .."bgcolor[#080808BB;true]"
-        .."image_button[4.5,-0.3;0.8,0.8;;esc;X]"
         .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        .."button[0,1;1,1;;326]"
-        .."button[1.5,6;1,1;wam;<]"
-        if tonumber(level2) > 326 then
-            formspec = formspec.."button[1,1;1,1;;327]"
-        end
-        if tonumber(level2) > 327 then
-            formspec = formspec.."button[2,1;1,1;;328]"
-        end
-        if tonumber(level2) > 328 then
-            formspec = formspec.."button[3,1;1,1;;329]"
-        end
-        if tonumber(level2) > 329 then
-            formspec = formspec.."button[4,1;1,1;;330]"
-        end
-        if tonumber(level2) > 330 then
-            formspec = formspec.."button[0,2;1,1;;331]"
-        end
-        if tonumber(level2) > 331 then
-            formspec = formspec.."button[1,2;1,1;;332]"
-        end
-        if tonumber(level2) > 332 then
-            formspec = formspec.."button[2,2;1,1;;333]"
-        end
+		formspec = formspec.."button[1.5,6;1,1;wcm;<]"
+        formspec = formspec..lvbut(325,8,level2)
         if tonumber(level2) > 333 then
             formspec = formspec.."label[0,3;play world 1 and 2]"
+        end
+	return formspec		
+end
+local w41 = {}
+w41.get_formspec = function(player, pos)
+	if player == nil then
+        return
+    end
+	local player_inv = player:get_inventory()
+    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
+	local level2 = lv:read("*l")
+    lv:close()
+	formspec = "size[5,6.5]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/100]"
+        formspec = formspec..lvbut(0,25,level2)
+        if tonumber(level2) > 25 then
+			formspec = formspec.."button[2.5,6;1,1;wdb;>]"
+        end
+	return formspec		
+end
+local w42 = {}
+w42.get_formspec = function(player, pos)
+	if player == nil then
+        return
+    end
+	local player_inv = player:get_inventory()
+    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
+	local level2 = lv:read("*l")
+    lv:close()
+	formspec = "size[5,6.5]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/100]"
+		formspec = formspec.."button[1.5,6;1,1;wda;<]"
+        formspec = formspec..lvbut(25,25,level2)
+        if tonumber(level2) > 50 then
+            formspec = formspec.."button[2.5,6;1,1;wdc;>]"
+        end
+	return formspec		
+end
+local w43 = {}
+w43.get_formspec = function(player, pos)
+	if player == nil then
+        return
+    end
+	local player_inv = player:get_inventory()
+    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
+	local level2 = lv:read("*l")
+    lv:close()
+	formspec = "size[5,6.5]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/100]"
+		formspec = formspec.."button[1.5,6;1,1;wdb;<]"
+        formspec = formspec..lvbut(50,25,level2)
+        if tonumber(level2) > 75 then
+			formspec = formspec.."button[2.5,6;1,1;wdd;>]"
+        end
+	return formspec		
+end
+local w44 = {}
+w44.get_formspec = function(player, pos)
+	if player == nil then
+        return
+    end
+	local player_inv = player:get_inventory()
+    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
+	local level2 = lv:read("*l")
+    lv:close()
+	formspec = "size[5,6.5]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/100]"
+		formspec = formspec.."button[1.5,6;1,1;wdc;<]"
+        formspec = formspec..lvbut(75,25,level2)
+        if tonumber(level2) > 100 then
+            formspec = formspec.."label[0,6;more comming soon]"
         end
 	return formspec		
 end
@@ -3129,7 +1572,17 @@ minetest.register_node("sudoku:new_w4",{
 	description = "New",
     --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
     on_punch = function(pos, node, player, pointed_thing)
-        minetest.show_formspec(player:get_player_name(), "w3" , w3.get_formspec(player))
+		local player_inv = player:get_inventory()
+        local page = player_inv:get_stack("page4", 1):get_count()+1
+        if page == 1 then
+            minetest.show_formspec(player:get_player_name(), "w41" , w41.get_formspec(player))
+		elseif page == 2 then
+            minetest.show_formspec(player:get_player_name(), "w42" , w42.get_formspec(player))
+		elseif page == 3 then
+            minetest.show_formspec(player:get_player_name(), "w43" , w43.get_formspec(player))
+		elseif page == 4 then
+            minetest.show_formspec(player:get_player_name(), "w44" , w44.get_formspec(player))
+        end
     end,
 })
 minetest.register_node("sudoku:new_w5",{
@@ -3163,9 +1616,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
     player_inv:set_size("page1", 1)
     player_inv:set_size("page2", 1)
     player_inv:set_size("page3", 1)
-    local d = 0
-    if formname == "w11" then
-        d = 1
+	player_inv:set_size("page4", 1)
+	if formname == "w11" or formname == "w12" or formname == "w13" or formname == "w14" or formname == "w15" or formname == "w16" or formname == "w17" then
         for k, v in pairs(fields) do
             if tonumber(v) ~= nil then
                 New(player,"1_"..v)
@@ -3173,126 +1625,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
                 player_inv:set_stack("ll", 1, "default:dirt 1")
             end
         end
-        if fields.wab then
-            player_inv:set_stack("page1",  1, "default:dirt")
-            minetest.show_formspec(player:get_player_name(), "w12" , w12.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
 	end
-    if formname == "w12" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"1_"..v)
-                player_inv:set_stack("l",  1, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 1")
-            end
-        end
-        if fields.waa then
-            player_inv:set_stack("page1",  1, nil)
-            minetest.show_formspec(player:get_player_name(), "w11" , w11.get_formspec(player))
-        elseif fields.wac then
-            player_inv:set_stack("page1",  1, "default:dirt 2")
-            minetest.show_formspec(player:get_player_name(), "w13" , w13.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-    end
-    if formname == "w13" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"1_"..v)
-                player_inv:set_stack("l",  1, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 1")
-            end
-        end
-        if fields.wab then
-            player_inv:set_stack("page1",  1, "default:dirt 1")
-            minetest.show_formspec(player:get_player_name(), "w12" , w12.get_formspec(player))
-        elseif fields.wad then
-            player_inv:set_stack("page1",  1, "default:dirt 3")
-            minetest.show_formspec(player:get_player_name(), "w14" , w14.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w14" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"1_"..v)
-                player_inv:set_stack("l",  1, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 1")
-            end
-        end
-        if fields.wac then
-            player_inv:set_stack("page1",  1, "default:dirt 2")
-            minetest.show_formspec(player:get_player_name(), "w13" , w13.get_formspec(player))
-        elseif fields.wae then
-            player_inv:set_stack("page1",  1, "default:dirt 4")
-            minetest.show_formspec(player:get_player_name(), "w15" , w15.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w15" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"1_"..v)
-                player_inv:set_stack("l",  1, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 1")
-            end
-        end
-        if fields.wad then
-            player_inv:set_stack("page1",  1, "default:dirt 3")
-            minetest.show_formspec(player:get_player_name(), "w14" , w14.get_formspec(player))
-        elseif fields.waf then
-            player_inv:set_stack("page1",  1, "default:dirt 5")
-            minetest.show_formspec(player:get_player_name(), "w16" , w16.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w16" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"1_"..v)
-                player_inv:set_stack("l",  1, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 1")
-            end
-        end
-        if fields.wae then
-            player_inv:set_stack("page1",  1, "default:dirt 4")
-            minetest.show_formspec(player:get_player_name(), "w15" , w15.get_formspec(player))
-        elseif fields.wag then
-            player_inv:set_stack("page1",  1, "default:dirt 6")
-            minetest.show_formspec(player:get_player_name(), "w17" , w17.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w17" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"1_"..v)
-                player_inv:set_stack("l",  1, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 1")
-            end
-        end
-        if fields.waf then
-            player_inv:set_stack("page1",  1, "default:dirt 5")
-            minetest.show_formspec(player:get_player_name(), "w16" , w16.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w21" then
-        d = 1
+	if formname == "w21" or formname == "w22" or formname == "w23" or formname == "w24" or formname == "w25" or formname == "w26" or formname == "w27" or formname == "w28" then
         for k, v in pairs(fields) do
             if tonumber(v) ~= nil then
                 New(player,"2_"..v)
@@ -3300,145 +1634,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
                 player_inv:set_stack("ll", 1, "default:dirt 2")
             end
         end
-        if fields.wab then
-            player_inv:set_stack("page2",  1, "default:dirt")
-            minetest.show_formspec(player:get_player_name(), "w22" , w22.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
 	end
-    if formname == "w22" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"2_"..v)
-                player_inv:set_stack("l",  2, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 2")
-            end
-        end
-        if fields.waa then
-            player_inv:set_stack("page2",  1, nil)
-            minetest.show_formspec(player:get_player_name(), "w21" , w21.get_formspec(player))
-        elseif fields.wac then
-            player_inv:set_stack("page2",  1, "default:dirt 2")
-            minetest.show_formspec(player:get_player_name(), "w23" , w23.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-    end
-    if formname == "w23" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"2_"..v)
-                player_inv:set_stack("l",  2, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 2")
-            end
-        end
-        if fields.wab then
-            player_inv:set_stack("page2",  1, nil)
-            minetest.show_formspec(player:get_player_name(), "w22" , w22.get_formspec(player))
-        elseif fields.wad then
-            player_inv:set_stack("page2",  1, "default:dirt 3")
-            minetest.show_formspec(player:get_player_name(), "w24" , w24.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-    end
-    if formname == "w24" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"2_"..v)
-                player_inv:set_stack("l",  2, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 2")
-            end
-        end
-        if fields.wac then
-            player_inv:set_stack("page2",  1, "default:dirt 2")
-            minetest.show_formspec(player:get_player_name(), "w23" , w23.get_formspec(player))
-        elseif fields.wae then
-            player_inv:set_stack("page2",  1, "default:dirt 4")
-            minetest.show_formspec(player:get_player_name(), "w25" , w25.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-    end
-    if formname == "w25" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"2_"..v)
-                player_inv:set_stack("l",  2, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 2")
-            end
-        end
-        if fields.wad then
-            player_inv:set_stack("page2",  1, "default:dirt 3")
-            minetest.show_formspec(player:get_player_name(), "w24" , w24.get_formspec(player))
-        elseif fields.waf then
-            player_inv:set_stack("page2",  1, "default:dirt 5")
-            minetest.show_formspec(player:get_player_name(), "w26" , w26.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-    end
-    if formname == "w26" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"2_"..v)
-                player_inv:set_stack("l",  2, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 2")
-            end
-        end
-        if fields.wae then
-            player_inv:set_stack("page2",  1, "default:dirt 4")
-            minetest.show_formspec(player:get_player_name(), "w25" , w25.get_formspec(player))
-        elseif fields.wag then
-            player_inv:set_stack("page2",  1, "default:dirt 6")
-            minetest.show_formspec(player:get_player_name(), "w27" , w27.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-    end
-    if formname == "w27" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"2_"..v)
-                player_inv:set_stack("l",  2, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 2")
-            end
-        end
-        if fields.waf then
-            player_inv:set_stack("page2",  1, "default:dirt 5")
-            minetest.show_formspec(player:get_player_name(), "w26" , w26.get_formspec(player))
-        elseif fields.wah then
-            player_inv:set_stack("page2",  1, "default:dirt 7")
-            minetest.show_formspec(player:get_player_name(), "w28" , w28.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-    end
-    if formname == "w28" and d == 0 then
-        d = 1
-		for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"2_"..v)
-                player_inv:set_stack("l",  2, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 2")
-            end
-        end
-        if fields.wag then
-            player_inv:set_stack("page2",  1, "default:dirt 6")
-            minetest.show_formspec(player:get_player_name(), "w27" , w27.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-    end
-    if formname == "w31" then
-        d = 1
+	if formname == "w31" or formname == "w32" or formname == "w33" or formname == "w34" or formname == "w35" or formname == "w36" or formname == "w37" or formname == "w38" or formname == "w39" or formname == "w310" or formname == "w311" or formname == "w312" or formname == "w313" or formname == "w314" then
         for k, v in pairs(fields) do
             if tonumber(v) ~= nil then
                 New(player,"3_"..v)
@@ -3446,255 +1643,116 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
                 player_inv:set_stack("ll", 1, "default:dirt 3")
             end
         end
-        if fields.wab then
-            player_inv:set_stack("page3",  1, "default:dirt")
-            minetest.show_formspec(player:get_player_name(), "w32" , w32.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
 	end
-    if formname == "w32" then
-        d = 1
+	if formname == "w41" or formname == "w42" or formname == "w43" or formname == "w44" then
         for k, v in pairs(fields) do
             if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
+                New(player,"4_"..v)
+                player_inv:set_stack("l",  4, "default:dirt "..v)
+                player_inv:set_stack("ll", 1, "default:dirt 4")
             end
         end
-        if fields.waa then
-            player_inv:set_stack("page3",  1,nil)
-            minetest.show_formspec(player:get_player_name(), "w31" , w31.get_formspec(player))
-        elseif fields.wac then
-            player_inv:set_stack("page3",  1, "default:dirt 2")
-            minetest.show_formspec(player:get_player_name(), "w33" , w33.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
 	end
-    if formname == "w33" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.wab then
-            player_inv:set_stack("page3",  1,"default:dirt")
-            minetest.show_formspec(player:get_player_name(), "w32" , w32.get_formspec(player))
-        elseif fields.wad then
-            player_inv:set_stack("page3",  1, "default:dirt 3")
-            minetest.show_formspec(player:get_player_name(), "w34" , w34.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w34" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.wac then
-            player_inv:set_stack("page3",  1,"default:dirt 2")
-            minetest.show_formspec(player:get_player_name(), "w33" , w33.get_formspec(player))
-        elseif fields.wae then
-            player_inv:set_stack("page3",  1, "default:dirt 4")
-            minetest.show_formspec(player:get_player_name(), "w35" , w35.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w35" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.wad then
-            player_inv:set_stack("page3",  1,"default:dirt 3")
-            minetest.show_formspec(player:get_player_name(), "w34" , w34.get_formspec(player))
-        elseif fields.waf then
-            player_inv:set_stack("page3",  1, "default:dirt 5")
-            minetest.show_formspec(player:get_player_name(), "w36" , w36.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w36" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.wae then
-            player_inv:set_stack("page3",  1,"default:dirt 4")
-            minetest.show_formspec(player:get_player_name(), "w35" , w35.get_formspec(player))
-        elseif fields.wag then
-            player_inv:set_stack("page3",  1, "default:dirt 6")
-            minetest.show_formspec(player:get_player_name(), "w37" , w37.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w37" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.waf then
-            player_inv:set_stack("page3",  1,"default:dirt 5")
-            minetest.show_formspec(player:get_player_name(), "w36" , w36.get_formspec(player))
-        elseif fields.wah then
-            player_inv:set_stack("page3",  1, "default:dirt 7")
-            minetest.show_formspec(player:get_player_name(), "w38" , w38.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w38" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.wag then
-            player_inv:set_stack("page3",  1,"default:dirt 6")
-            minetest.show_formspec(player:get_player_name(), "w37" , w37.get_formspec(player))
-        elseif fields.wai then
-            player_inv:set_stack("page3",  1, "default:dirt 8")
-            minetest.show_formspec(player:get_player_name(), "w39" , w39.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w39" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.wah then
-            player_inv:set_stack("page3",  1,"default:dirt 7")
-            minetest.show_formspec(player:get_player_name(), "w38" , w38.get_formspec(player))
-        elseif fields.waj then
-            player_inv:set_stack("page3",  1, "default:dirt 9")
-            minetest.show_formspec(player:get_player_name(), "w310" , w310.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w310" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.wai then
-            player_inv:set_stack("page3",  1,"default:dirt 8")
-            minetest.show_formspec(player:get_player_name(), "w39" , w39.get_formspec(player))
-        elseif fields.wak then
-            player_inv:set_stack("page3",  1, "default:dirt 10")
-            minetest.show_formspec(player:get_player_name(), "w311" , w311.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w311" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.waj then
-            player_inv:set_stack("page3",  1,"default:dirt 9")
-            minetest.show_formspec(player:get_player_name(), "w310" , w310.get_formspec(player))
-        elseif fields.wal then
-            player_inv:set_stack("page3",  1, "default:dirt 11")
-            minetest.show_formspec(player:get_player_name(), "w312" , w312.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w312" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.wak then
-            player_inv:set_stack("page3",  1,"default:dirt 10")
-            minetest.show_formspec(player:get_player_name(), "w311" , w311.get_formspec(player))
-        elseif fields.wam then
-            player_inv:set_stack("page3",  1, "default:dirt 12")
-            minetest.show_formspec(player:get_player_name(), "w313" , w313.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w313" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.wal then
-            player_inv:set_stack("page3",  1,"default:dirt 11")
-            minetest.show_formspec(player:get_player_name(), "w312" , w312.get_formspec(player))
-        elseif fields.wan then
-            player_inv:set_stack("page3",  1, "default:dirt 13")
-            minetest.show_formspec(player:get_player_name(), "w314" , w314.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
-	end
-    if formname == "w314" then
-        d = 1
-        for k, v in pairs(fields) do
-            if tonumber(v) ~= nil then
-                New(player,"3_"..v)
-                player_inv:set_stack("l",  3, "default:dirt "..v)
-                player_inv:set_stack("ll", 1, "default:dirt 3")
-            end
-        end
-        if fields.wam then
-            player_inv:set_stack("page3",  1,"default:dirt 12")
-            minetest.show_formspec(player:get_player_name(), "w313" , w313.get_formspec(player))
-        else
-            minetest.show_formspec(player:get_player_name(), "", "")
-	    end
+	if fields.waa then
+        player_inv:set_stack("page1",  1, nil)
+        minetest.show_formspec(player:get_player_name(), "w11" , w11.get_formspec(player))
+    elseif fields.wab then
+        player_inv:set_stack("page1",  1, "default:dirt")
+        minetest.show_formspec(player:get_player_name(), "w12" , w12.get_formspec(player))
+    elseif fields.wac then
+        player_inv:set_stack("page1",  1, "default:dirt 2")
+        minetest.show_formspec(player:get_player_name(), "w13" , w13.get_formspec(player))
+    elseif fields.wad then
+        player_inv:set_stack("page1",  1, "default:dirt 3")
+        minetest.show_formspec(player:get_player_name(), "w14" , w14.get_formspec(player))
+    elseif fields.wae then
+        player_inv:set_stack("page1",  1, "default:dirt 4")
+        minetest.show_formspec(player:get_player_name(), "w15" , w15.get_formspec(player))
+    elseif fields.waf then
+        player_inv:set_stack("page1",  1, "default:dirt 5")
+        minetest.show_formspec(player:get_player_name(), "w16" , w16.get_formspec(player))
+    elseif fields.wag then
+        player_inv:set_stack("page1",  1, "default:dirt 6")
+        minetest.show_formspec(player:get_player_name(), "w17" , w17.get_formspec(player))
+    elseif fields.wba then
+        player_inv:set_stack("page2",  1, nil)
+        minetest.show_formspec(player:get_player_name(), "w21" , w21.get_formspec(player))
+    elseif fields.wbb then
+        player_inv:set_stack("page2",  1, "default:dirt")
+        minetest.show_formspec(player:get_player_name(), "w22" , w22.get_formspec(player))
+    elseif fields.wbc then
+        player_inv:set_stack("page2",  1, "default:dirt 2")
+        minetest.show_formspec(player:get_player_name(), "w23" , w23.get_formspec(player))
+    elseif fields.wbd then
+        player_inv:set_stack("page2",  1, "default:dirt 3")
+        minetest.show_formspec(player:get_player_name(), "w24" , w24.get_formspec(player))
+    elseif fields.wbe then
+        player_inv:set_stack("page2",  1, "default:dirt 4")
+        minetest.show_formspec(player:get_player_name(), "w25" , w25.get_formspec(player))
+    elseif fields.wbf then
+        player_inv:set_stack("page2",  1, "default:dirt 5")
+        minetest.show_formspec(player:get_player_name(), "w26" , w26.get_formspec(player))
+    elseif fields.wbg then
+        player_inv:set_stack("page2",  1, "default:dirt 6")
+        minetest.show_formspec(player:get_player_name(), "w27" , w27.get_formspec(player))
+	elseif fields.wbh then
+        player_inv:set_stack("page2",  1, "default:dirt 7")
+        minetest.show_formspec(player:get_player_name(), "w28" , w28.get_formspec(player))
+    elseif fields.wca then
+        player_inv:set_stack("page3",  1, nil)
+        minetest.show_formspec(player:get_player_name(), "w31" , w31.get_formspec(player))
+    elseif fields.wcb then
+        player_inv:set_stack("page3",  1, "default:dirt")
+        minetest.show_formspec(player:get_player_name(), "w32" , w32.get_formspec(player))
+    elseif fields.wcc then
+        player_inv:set_stack("page3",  1, "default:dirt 2")
+        minetest.show_formspec(player:get_player_name(), "w33" , w33.get_formspec(player))
+    elseif fields.wcd then
+        player_inv:set_stack("page3",  1, "default:dirt 3")
+        minetest.show_formspec(player:get_player_name(), "w34" , w34.get_formspec(player))
+	elseif fields.wce then
+        player_inv:set_stack("page3",  1, "default:dirt 4")
+        minetest.show_formspec(player:get_player_name(), "w35" , w35.get_formspec(player))
+	elseif fields.wcf then
+        player_inv:set_stack("page3",  1, "default:dirt 5")
+        minetest.show_formspec(player:get_player_name(), "w36" , w36.get_formspec(player))	
+	elseif fields.wcg then
+        player_inv:set_stack("page3",  1, "default:dirt 6")
+        minetest.show_formspec(player:get_player_name(), "w37" , w37.get_formspec(player))
+	elseif fields.wch then
+        player_inv:set_stack("page3",  1, "default:dirt 7")
+        minetest.show_formspec(player:get_player_name(), "w38" , w38.get_formspec(player))
+	elseif fields.wci then
+        player_inv:set_stack("page3",  1, "default:dirt 8")
+        minetest.show_formspec(player:get_player_name(), "w39" , w39.get_formspec(player))	
+	elseif fields.wcj then
+        player_inv:set_stack("page3",  1, "default:dirt 9")
+        minetest.show_formspec(player:get_player_name(), "w310" , w310.get_formspec(player))
+	elseif fields.wck then
+        player_inv:set_stack("page3",  1, "default:dirt 10")
+        minetest.show_formspec(player:get_player_name(), "w311" , w311.get_formspec(player))
+	elseif fields.wcl then
+        player_inv:set_stack("page3",  1, "default:dirt 11")
+        minetest.show_formspec(player:get_player_name(), "w312" , w312.get_formspec(player))
+	elseif fields.wcm then
+        player_inv:set_stack("page3",  1, "default:dirt 12")
+        minetest.show_formspec(player:get_player_name(), "w313" , w313.get_formspec(player))
+	elseif fields.wcn then
+        player_inv:set_stack("page3",  1, "default:dirt 13")
+        minetest.show_formspec(player:get_player_name(), "w314" , w314.get_formspec(player))
+	elseif fields.wda then
+        player_inv:set_stack("page4",  1, "")
+        minetest.show_formspec(player:get_player_name(), "w41" , w41.get_formspec(player))
+	elseif fields.wdb then
+        player_inv:set_stack("page4",  1, "default:dirt")
+        minetest.show_formspec(player:get_player_name(), "w42" , w42.get_formspec(player))
+	elseif fields.wdc then
+        player_inv:set_stack("page4",  1, "default:dirt 2")
+        minetest.show_formspec(player:get_player_name(), "w43" , w43.get_formspec(player))
+	elseif fields.wdd then
+        player_inv:set_stack("page4",  1, "default:dirt 3")
+        minetest.show_formspec(player:get_player_name(), "w44" , w44.get_formspec(player))
+    else
+        minetest.show_formspec(player:get_player_name(), "", "")
 	end
 end)
