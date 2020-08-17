@@ -8,7 +8,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=10},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "For Minetest 	  :  5.2.0",
+		text = "For Minetest 	  :  5.3.0",
 	})
 	player:hud_add({
 		hud_elem_type = "text",
@@ -16,7 +16,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=30},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "Game Version	 :  1.9.3",
+		text = "Game Version	 :  1.9.4",
 	})
     hud_levels[name] = player:hud_add({
 		hud_elem_type = "text",
@@ -130,6 +130,10 @@ minetest.register_on_newplayer(function(player)
     minetest.set_player_privs(player:get_player_name(), pri)
 end)
 
+minetest.register_on_player_hpchange(function(player, hp_change)
+	hp_change = 0
+	return hp_change
+end, true)
 
 minetest.register_node("sudoku:desert",{
 	description = "Desert",
