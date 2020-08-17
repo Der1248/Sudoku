@@ -16,7 +16,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=30},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "Game Version	 :  1.9.1",
+		text = "Game Version	 :  1.9.2",
 	})
     hud_levels[name] = player:hud_add({
 		hud_elem_type = "text",
@@ -134,17 +134,17 @@ end)
 minetest.register_node("sudoku:desert",{
 	description = "Desert",
 	tiles = {"default_desert_sand.png"},
-    groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
 })
 minetest.register_node("sudoku:black",{
 	description = "Black",
 	tiles = {"wool_black.png"},
-    groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
 })
 minetest.register_node("sudoku:gray",{
 	description = "Gray",
 	tiles = {"default_sand.png"},
-    groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
 })
 minetest.register_node("sudoku:glass", {
 	description = "Obsidian Glass",
@@ -154,12 +154,12 @@ minetest.register_node("sudoku:glass", {
 	paramtype2 = "glasslikeliquidlevel",
 	is_ground_content = false,
 	sunlight_propagates = true,
-	groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+	--groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
 })
 minetest.register_node("sudoku:wall",{
 	description = "Wall",
 	tiles = {"default_mossycobble.png"},
-    groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
 })
 minetest.register_node("sudoku:meselamp", {
 	description = "Mese Lamp",
@@ -168,14 +168,14 @@ minetest.register_node("sudoku:meselamp", {
 	paramtype = "light",
 	sunlight_propagates = true,
 	is_ground_content = false,
-	groups = {cracky = 3, oddly_breakable_by_hand = 3},
+	--groups = {cracky = 3, oddly_breakable_by_hand = 3},
 	light_source = 15,
 })
 for i=1,9 do
     minetest.register_node("sudoku:"..i,{
 	    description = ""..i,
 	    tiles = {"sudoku_1_"..i..".png"},
-        groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+        --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
     })
 end
 for i=1,9 do
