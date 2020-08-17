@@ -8,7 +8,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=10},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "For Minetest 	  :  5.0.x",
+		text = "For Minetest 	  :  5.1.x",
 	})
 	player:hud_add({
 		hud_elem_type = "text",
@@ -16,7 +16,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=30},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "Game Version	 :  1.9.0",
+		text = "Game Version	 :  1.9.1",
 	})
     hud_levels[name] = player:hud_add({
 		hud_elem_type = "text",
@@ -27,6 +27,8 @@ minetest.register_on_joinplayer(function(player)
 		text = "Level: /",
 	})
 end)
+
+local map_version = 1
 
 minetest.register_on_joinplayer(function(player)
     player:set_inventory_formspec("")
@@ -72,7 +74,6 @@ minetest.register_on_joinplayer(function(player)
     minetest.set_timeofday(0.5)
     minetest.setting_set("node_highlighting", "box")
     player:hud_set_hotbar_itemcount(9)
-    player:setpos({x=19, y=10, z=-87})
 	if file_check(minetest.get_worldpath().."/level1.txt") == true then
 	else
 		file = io.open(minetest.get_worldpath().."/level1.txt", "w")
@@ -103,6 +104,23 @@ minetest.register_on_joinplayer(function(player)
 		file:write("1")
 		file:close()
 	end
+	if file_check(minetest.get_worldpath().."/Map_Version.txt") ~= true  then
+		minetest.place_schematic({ x = 9, y = 7, z = -93 }, minetest.get_modpath("sudoku").."/schematics/sector1.mts","0")
+		player:setpos({x=19, y=8, z=-88})
+		file = io.open(minetest.get_worldpath().."/Map_Version.txt", "w")
+		file:write(map_version)
+		file:close()
+	end
+	file = io.open(minetest.get_worldpath().."/Map_Version.txt", "r")
+	local map_ver = file:read("*l")
+    file:close()
+	if tonumber(map_ver) < map_version then
+		minetest.place_schematic({ x = 9, y = 7, z = -93 }, minetest.get_modpath("sudoku").."/schematics/sector1.mts","0")
+		player:setpos({x=19, y=8, z=-88})
+		file = io.open(minetest.get_worldpath().."/Map_Version.txt", "w")
+		file:write(map_version)
+		file:close()
+	end
 end)
 minetest.register_on_newplayer(function(player)
     local player = minetest.get_player_by_name(player:get_player_name())
@@ -110,130 +128,8 @@ minetest.register_on_newplayer(function(player)
     pri["fly"] = true
 	pri["fast"] = true
     minetest.set_player_privs(player:get_player_name(), pri)
-	player:setpos({x=19, y=10, z=-88})
 end)
 
-local timer = 0
-local set = 0
-minetest.register_globalstep(function(dtime)
-	timer = timer + dtime
-	local players = minetest.get_connected_players()
-	for _,player in ipairs(players) do
-		local player_inv = player:get_inventory()
-		player_inv:set_size("load", 1)
-		if minetest.get_node({x=10, y=9, z=-75}).name == "sudoku:gray" and player_inv:get_stack("load", 1):get_count() < 1 and set == 0 then
-			minetest.chat_send_all("The world is loading... This can take a few seconds")
-			player:setpos({x=19, y=10, z=-88})
-			for i = 10, 28 do
-				for m = 8,28 do
-					for j = 75, 93 do
-						minetest.set_node({x=i, y=m, z=(-1)*j}, {name="air"})
-					end
-				end
-			end
-			set = 1
-		end
-		if minetest.get_node({x=10, y=9, z=-75}).name == "sudoku:gray" and player_inv:get_stack("load", 1):get_count() < 1 and set == 1 then
-			player:setpos({x=19, y=10, z=-88})
-			for i = 10, 28 do
-				for j = 79, 93 do
-					minetest.set_node({x=i, y=28, z=(-1)*j}, {name="sudoku:meselamp"})
-				end
-			end
-			for i = 10, 28 do
-				for j = 79, 93 do
-					for m = 29,150 do
-						minetest.set_node({x=i, y=m, z=(-1)*j}, {name="air"})
-					end
-				end
-			end
-			minetest.chat_send_all("The world should be loaded, if not start a new world!")
-			player:setpos({x=19, y=10, z=-88})
-			player_inv:set_stack("load", 1, "default:dirt")
-		end
-		if timer >= 1 then
-			timer = 0
-			for i = 10, 28 do
-				for m = 9,27 do
-					minetest.set_node({x=i, y=m, z=-75}, {name="sudoku:gray"})
-				end
-			end
-			for i = 75, 85 do
-				for m = 9,28 do
-					minetest.set_node({x=9, y=m, z=(-1)*i}, {name="sudoku:wall"})
-					minetest.set_node({x=29, y=m, z=(-1)*i}, {name="sudoku:wall"})
-				end
-			end
-			for i = 86, 87 do
-				for m = 9,28 do
-					minetest.set_node({x=10, y=m, z=(-1)*i}, {name="sudoku:wall"})
-					minetest.set_node({x=28, y=m, z=(-1)*i}, {name="sudoku:wall"})
-				end
-			end
-			for i = 88, 89 do
-				for m = 9,28 do
-					minetest.set_node({x=11, y=m, z=(-1)*i}, {name="sudoku:wall"})
-					minetest.set_node({x=27, y=m, z=(-1)*i}, {name="sudoku:wall"})
-				end
-			end
-			for m = 9,28 do
-				minetest.set_node({x=12, y=m, z=-90}, {name="sudoku:wall"})
-				minetest.set_node({x=26, y=m, z=-90}, {name="sudoku:wall"})
-				minetest.set_node({x=13, y=m, z=-91}, {name="sudoku:wall"})
-				minetest.set_node({x=25, y=m, z=-91}, {name="sudoku:wall"})
-				minetest.set_node({x=14, y=m, z=-92}, {name="sudoku:wall"})
-				minetest.set_node({x=24, y=m, z=-92}, {name="sudoku:wall"})
-			end
-			for i = 15, 23 do
-				for m = 9,28 do
-					minetest.set_node({x=i, y=m, z=-93}, {name="sudoku:wall"})
-				end
-			end
-			
-			for i = 10, 28 do
-				for j = 75, 78 do
-					minetest.set_node({x=i, y=28, z=(-1)*j}, {name="sudoku:wall"})
-				end
-			end
-			for i = 10, 28 do
-				for j = 75, 93 do
-					minetest.set_node({x=i, y=7, z=(-1)*j}, {name="sudoku:desert"})
-					minetest.set_node({x=i, y=8, z=(-1)*j}, {name="sudoku:desert"})
-				end
-			end
-			for i = 11, 27 do
-				for j = 80, 84 do
-					minetest.set_node({x=i, y=8, z=(-1)*j}, {name="air"})
-				end
-			end
-			for i = 12, 26 do
-				for j = 85, 86 do
-					minetest.set_node({x=i, y=8, z=(-1)*j}, {name="air"})
-				end
-			end
-			for i = 13, 25 do
-				for j = 87, 88 do
-					minetest.set_node({x=i, y=8, z=(-1)*j}, {name="air"})
-				end
-			end
-			for i = 14, 24 do
-				minetest.set_node({x=i, y=8, z=-89}, {name="air"})
-			end
-			for i = 15, 23 do
-				minetest.set_node({x=i, y=8, z=-90}, {name="air"})
-			end
-			for i = 16, 22 do
-				minetest.set_node({x=i, y=8, z=-91}, {name="air"})
-			end
-			minetest.set_node({x=17, y=8, z=-80}, {name="sudoku:new_w1"})
-			minetest.set_node({x=18, y=8, z=-80}, {name="sudoku:new_w2"})
-			minetest.set_node({x=19, y=8, z=-80}, {name="sudoku:new_w3"})
-			minetest.set_node({x=20, y=8, z=-80}, {name="sudoku:new_w4"})
-			minetest.set_node({x=21, y=8, z=-80}, {name="sudoku:new_w5"})
-			minetest.set_node({x=19, y=7, z=-85}, {name="sudoku:finisch"})
-		end
-	end
-end)
 
 minetest.register_node("sudoku:desert",{
 	description = "Desert",
