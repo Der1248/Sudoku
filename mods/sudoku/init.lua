@@ -8,7 +8,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=10},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "For Minetest 	  :  5.4.0",
+		text = "For Minetest 	  :  5.4.x",
 	})
 	player:hud_add({
 		hud_elem_type = "text",
@@ -16,7 +16,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=30},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "Game Version	 :  1.9.5",
+		text = "Game Version	 :  1.10.0",
 	})
     hud_levels[name] = player:hud_add({
 		hud_elem_type = "text",
@@ -28,7 +28,44 @@ minetest.register_on_joinplayer(function(player)
 	})
 end)
 
-local map_version = 1
+local map_version = 2
+
+local caps = {times = {42, 42, 42}, uses = 0, maxlevel = 256}
+
+minetest.register_item(":", {
+	type = "none",
+	wield_image = "wieldhand.png",
+	wield_scale = {x = 1, y = 1, z = 2.5},
+	range = 15,
+	tool_capabilities = {
+		full_punch_interval = 0.5,
+		max_drop_level = 3,
+		groupcaps = {
+			crumbly = caps,
+			cracky  = caps,
+			snappy  = caps,
+			choppy  = caps,
+			oddly_breakable_by_hand = caps,
+		},
+		damage_groups = {fleshy = 1},
+	}
+})
+
+local main = {}
+main.get_formspec = function(player, pos)
+	if player == nil then
+        return
+    end
+	formspec = "size[9,10.3]"
+        .."background[9,10.3;1,1;gui_formbg.png;true]"
+        .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
+        .."bgcolor[#080808BB;true]"
+        .."label[0,0;Here you can get some basic informations about my game: Sudoku]"
+        .."label[0,0.6;Thanks to:]"
+		.."label[0,0.9;jumali for testing and making some sudokus]"
+		.."label[0,1.8;more informations comming soon]"
+	return formspec		
+end
 
 minetest.register_on_joinplayer(function(player)
     player:set_inventory_formspec("")
@@ -54,6 +91,10 @@ minetest.register_globalstep(function(dtime)
         else
             player:hud_change(hud_levels[player:get_player_name()], 'text', "Level: World "..ll.."."..l)
         end
+		player:hud_set_hotbar_image("sudoku_gui_hotbar.png")
+		player:hud_set_hotbar_selected_image("gui_hotbar_selected.png")
+		player:set_inventory_formspec(main.get_formspec(player))
+		SetItems(player)
     end
 end)
 function file_check(file_name)
@@ -67,6 +108,7 @@ function file_check(file_name)
 end
 minetest.register_on_joinplayer(function(player)
     local override_table = player:get_physics_override()
+	local player_inv = player:get_inventory()
     override_table.new_move = false
     override_table.sneak_glitch = true
     player:set_physics_override(override_table)
@@ -107,6 +149,10 @@ minetest.register_on_joinplayer(function(player)
 	if file_check(minetest.get_worldpath().."/Map_Version.txt") ~= true  then
 		minetest.place_schematic({ x = 9, y = 7, z = -93 }, minetest.get_modpath("sudoku").."/schematics/sector1.mts","0")
 		player:setpos({x=19, y=8, z=-88})
+		for j=1,9 do
+			local ll = player_inv:get_stack("ll", 1):get_count()
+			player_inv:set_stack("main", j, "")
+		end
 		file = io.open(minetest.get_worldpath().."/Map_Version.txt", "w")
 		file:write(map_version)
 		file:close()
@@ -117,6 +163,12 @@ minetest.register_on_joinplayer(function(player)
 	if tonumber(map_ver) < map_version then
 		minetest.place_schematic({ x = 9, y = 7, z = -93 }, minetest.get_modpath("sudoku").."/schematics/sector1.mts","0")
 		player:setpos({x=19, y=8, z=-88})
+		local player_inv = player:get_inventory()
+		for j=1,9 do
+			local ll = player_inv:get_stack("ll", 1):get_count()
+			player_inv:set_stack("main", j, "")
+		end
+		player_inv:set_stack("ll", 1, "")
 		file = io.open(minetest.get_worldpath().."/Map_Version.txt", "w")
 		file:write(map_version)
 		file:close()
@@ -150,16 +202,6 @@ minetest.register_node("sudoku:gray",{
 	tiles = {"default_sand.png"},
     --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
 })
-minetest.register_node("sudoku:glass", {
-	description = "Obsidian Glass",
-	drawtype = "glasslike_framed_optional",
-	tiles = {"default_obsidian_glass.png", "default_obsidian_glass_detail.png"},
-	paramtype = "light",
-	paramtype2 = "glasslikeliquidlevel",
-	is_ground_content = false,
-	sunlight_propagates = true,
-	--groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
-})
 minetest.register_node("sudoku:wall",{
 	description = "Wall",
 	tiles = {"default_mossycobble.png"},
@@ -175,27 +217,39 @@ minetest.register_node("sudoku:meselamp", {
 	--groups = {cracky = 3, oddly_breakable_by_hand = 3},
 	light_source = 15,
 })
-for i=1,9 do
+for i=0,9 do
     minetest.register_node("sudoku:"..i,{
 	    description = ""..i,
-	    tiles = {"sudoku_1_"..i..".png"},
+	    tiles = {"sudoku_1_"..i..".png^sudoku_outline.png"},
         --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
     })
+	
 end
 for i=1,9 do
-    minetest.register_node("sudoku:n_"..i,{
+	minetest.register_node("sudoku:n_"..i,{
 	    description = ""..i,
-	    tiles = {"sudoku_2_"..i..".png"},
+	    tiles = {"sudoku_2_"..i..".png^sudoku_outline.png"},
         groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
-		after_place_node = function(pos, placer, itemstack, pointed_thing)
-			if Place(placer,i,pos) == false or pos.z ~= -76 then
-				minetest.set_node(pos, {name="air"})
-				local player_inv = placer:get_inventory()
-				return itemstack
-			end
+		on_dig = function(pos, node, digger)
+			minetest.add_node(pos, {name="sudoku:0"})
 		end,
     })
+	minetest.register_craftitem("sudoku:i_"..i, {
+		description = ""..i,
+		inventory_image = "sudoku_2_"..i..".png",
+		on_place = function(itemstack, placer, pointed_thing) 
+			local nodes = minetest.get_node(pointed_thing.under)
+			local name = nodes.name
+			if name == "sudoku:0" and Place(placer,i,pointed_thing.under) then
+				minetest.add_node(pointed_thing.under, {name="sudoku:n_"..i})
+			end
+			
+			Finisch(placer,0,pointed_thing.under)
+		end,
+	})
 end
+
+
 function New(player,page)
     local player_inv = player:get_inventory()
     player_inv:set_list("main", nil)
@@ -257,7 +311,7 @@ function New(player,page)
                 l = j+2
             end
             if string.sub(ar1[j], i, i) == "0" then
-                minetest.set_node({x=k+13, y=(12-l)+8, z=-76}, {name="air"})
+                minetest.set_node({x=k+13, y=(12-l)+8, z=-76}, {name="sudoku:0"})
             elseif string.sub(ar1[j], i, i) == "1" then
                 minetest.set_node({x=k+13, y=(12-l)+8, z=-76}, {name="sudoku:1"})
                 a1 = a1+1
@@ -294,17 +348,9 @@ function New(player,page)
         minetest.set_node({x=13+i, y=12, z=-76}, {name="sudoku:black"})
         minetest.set_node({x=13+i, y=16, z=-76}, {name="sudoku:black"})
     end
-    player_inv:add_item("main", "sudoku:n_1 "..(9-a1))
-    player_inv:add_item("main", "sudoku:n_2 "..(9-a2))
-    player_inv:add_item("main", "sudoku:n_3 "..(9-a3))
-    player_inv:add_item("main", "sudoku:n_4 "..(9-a4))
-    player_inv:add_item("main", "sudoku:n_5 "..(9-a5))
-    player_inv:add_item("main", "sudoku:n_6 "..(9-a6))
-    player_inv:add_item("main", "sudoku:n_7 "..(9-a7))
-    player_inv:add_item("main", "sudoku:n_8 "..(9-a8))
-    player_inv:add_item("main", "sudoku:n_9 "..(9-a9))
+    SetItems(player)
 end
-function Fi(i,k)
+function Fi(i,k,number,pos)
     local temp = ""
     if minetest.get_node({x=i, y=k, z=-76}).name == "sudoku:1" or minetest.get_node({x=i, y=k, z=-76}).name == "sudoku:n_1" then
         temp = "1"
@@ -324,10 +370,31 @@ function Fi(i,k)
         temp = "8"
     elseif minetest.get_node({x=i, y=k, z=-76}).name == "sudoku:9" or minetest.get_node({x=i, y=k, z=-76}).name == "sudoku:n_9" then
         temp = "9"
+	elseif pos.x == i and pos.y == k then
+        temp = number
     else
         temp = "0"
     end
     return temp
+end
+function SetItems(player)
+	local n = {0,0,0,0,0,0,0,0,0}
+    for i=10,28 do
+        for k=9,27 do
+			for j=1,9 do
+				if minetest.get_node({x=i, y=k, z=-76}).name == "sudoku:"..j or minetest.get_node({x=i, y=k, z=-76}).name == "sudoku:n_"..j then
+					n[j] = n[j]+1
+				end
+			end
+        end
+    end
+	local player_inv = player:get_inventory()
+	for j=1,9 do
+		local ll = player_inv:get_stack("ll", 1):get_count()
+		if ll ~= 0 then
+			player_inv:set_stack("main", j, "sudoku:i_"..j.." "..(9-n[j]))
+		end
+	end
 end
 function repeats(s,c)
     local _,n = s:gsub(c,"")
@@ -340,7 +407,7 @@ function Place(player,number,pos)
         local d = 0
         local temp = ""
         for k=9,19 do
-			temp = temp..Fi(i,k)
+			temp = temp..Fi(i,k,number,pos)
         end
         ar[i-13] = temp
     end
@@ -367,7 +434,7 @@ function Place(player,number,pos)
         local d = 0
         local temp = ""
         for i=14,24 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
         ar[k-8] = temp
     end
@@ -395,7 +462,7 @@ function Place(player,number,pos)
     for k=9,11 do
         local d = 0
         for i=14,16 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
@@ -407,7 +474,7 @@ function Place(player,number,pos)
     for k=9,11 do
         local d = 0
         for i=18,20 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
@@ -419,7 +486,7 @@ function Place(player,number,pos)
     for k=9,11 do
         local d = 0
         for i=22,24 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
@@ -432,7 +499,7 @@ function Place(player,number,pos)
     for k=13,15 do
         local d = 0
         for i=14,16 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
@@ -444,7 +511,7 @@ function Place(player,number,pos)
     for k=13,15 do
         local d = 0
         for i=18,20 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
@@ -456,7 +523,7 @@ function Place(player,number,pos)
     for k=13,15 do
         local d = 0
         for i=22,24 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
@@ -468,7 +535,7 @@ function Place(player,number,pos)
     for k=17,29 do
         local d = 0
         for i=14,16 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
@@ -480,7 +547,7 @@ function Place(player,number,pos)
     for k=17,19 do
         local d = 0
         for i=18,20 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
@@ -493,7 +560,7 @@ function Place(player,number,pos)
     for k=17,19 do
         local d = 0
         for i=22,24 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if repeats(temp,"1") < 2 and repeats(temp,"2") < 2 and repeats(temp,"3") < 2 and repeats(temp,"4") < 2 and repeats(temp,"5") < 2 and repeats(temp,"6") < 2 and repeats(temp,"7") < 2 and repeats(temp,"8") < 2 and repeats(temp,"9") < 2 then
@@ -507,14 +574,14 @@ function Place(player,number,pos)
 		return true
 	end
 end
-function Finisch(player)
+function Finisch(player,number,pos)
     local dd = 0
     local ar = {}
     for i=14,24 do
         local d = 0
         local temp = ""
         for k=9,19 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
         ar[i-13] = temp
     end
@@ -541,7 +608,7 @@ function Finisch(player)
         local d = 0
         local temp = ""
         for i=14,24 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
         ar[k-8] = temp
     end
@@ -569,7 +636,7 @@ function Finisch(player)
     for k=9,11 do
         local d = 0
         for i=14,16 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if string.find(temp, "1") and string.find(temp, "2") and string.find(temp, "3") and string.find(temp, "4") and string.find(temp, "5") and string.find(temp, "6") and string.find(temp, "7") and string.find(temp, "8") and string.find(temp, "9") then
@@ -581,7 +648,7 @@ function Finisch(player)
     for k=9,11 do
         local d = 0
         for i=18,20 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if string.find(temp, "1") and string.find(temp, "2") and string.find(temp, "3") and string.find(temp, "4") and string.find(temp, "5") and string.find(temp, "6") and string.find(temp, "7") and string.find(temp, "8") and string.find(temp, "9") then
@@ -593,7 +660,7 @@ function Finisch(player)
     for k=9,11 do
         local d = 0
         for i=22,24 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if string.find(temp, "1") and string.find(temp, "2") and string.find(temp, "3") and string.find(temp, "4") and string.find(temp, "5") and string.find(temp, "6") and string.find(temp, "7") and string.find(temp, "8") and string.find(temp, "9") then
@@ -606,7 +673,7 @@ function Finisch(player)
     for k=13,15 do
         local d = 0
         for i=14,16 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if string.find(temp, "1") and string.find(temp, "2") and string.find(temp, "3") and string.find(temp, "4") and string.find(temp, "5") and string.find(temp, "6") and string.find(temp, "7") and string.find(temp, "8") and string.find(temp, "9") then
@@ -618,7 +685,7 @@ function Finisch(player)
     for k=13,15 do
         local d = 0
         for i=18,20 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if string.find(temp, "1") and string.find(temp, "2") and string.find(temp, "3") and string.find(temp, "4") and string.find(temp, "5") and string.find(temp, "6") and string.find(temp, "7") and string.find(temp, "8") and string.find(temp, "9") then
@@ -630,7 +697,7 @@ function Finisch(player)
     for k=13,15 do
         local d = 0
         for i=22,24 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if string.find(temp, "1") and string.find(temp, "2") and string.find(temp, "3") and string.find(temp, "4") and string.find(temp, "5") and string.find(temp, "6") and string.find(temp, "7") and string.find(temp, "8") and string.find(temp, "9") then
@@ -642,7 +709,7 @@ function Finisch(player)
     for k=17,29 do
         local d = 0
         for i=14,16 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if string.find(temp, "1") and string.find(temp, "2") and string.find(temp, "3") and string.find(temp, "4") and string.find(temp, "5") and string.find(temp, "6") and string.find(temp, "7") and string.find(temp, "8") and string.find(temp, "9") then
@@ -654,20 +721,19 @@ function Finisch(player)
     for k=17,19 do
         local d = 0
         for i=18,20 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if string.find(temp, "1") and string.find(temp, "2") and string.find(temp, "3") and string.find(temp, "4") and string.find(temp, "5") and string.find(temp, "6") and string.find(temp, "7") and string.find(temp, "8") and string.find(temp, "9") then
     else
         dd = 1
     end
-
     local ar = {}
     local temp = ""
     for k=17,19 do
         local d = 0
         for i=22,24 do
-            temp = temp..Fi(i,k)
+            temp = temp..Fi(i,k,number,pos)
         end
     end
     if string.find(temp, "1") and string.find(temp, "2") and string.find(temp, "3") and string.find(temp, "4") and string.find(temp, "5") and string.find(temp, "6") and string.find(temp, "7") and string.find(temp, "8") and string.find(temp, "9") then
@@ -675,7 +741,6 @@ function Finisch(player)
         dd = 1
     end
     if dd == 1 then
-        minetest.chat_send_all("not correct")
     else
         local player_inv = player:get_inventory()
         local ll = player_inv:get_stack("ll", 1):get_count()
@@ -897,7 +962,7 @@ w17.get_formspec = function(player, pos)
 		formspec = formspec.."button[1.5,6;1,1;waf;<]"
         formspec = formspec..lvbut(150,10,level2)
         if tonumber(level2) > 160 then
-            formspec = formspec.."label[0,3;play world 2 and 3]"
+            formspec = formspec.."label[0,2.7;play world 2 and 3]"
         end
 	return formspec		
 end
@@ -1040,7 +1105,7 @@ w28.get_formspec = function(player, pos)
 		formspec = formspec.."button[1.5,6;1,1;wbg;<]"
         formspec = formspec..lvbut(175,15,level2)
         if tonumber(level2) > 190 then
-            formspec = formspec.."label[0,4;play world 1 and 3]"
+            formspec = formspec.."label[0,3.7;play world 1 and 3]"
         end
 	return formspec		
 end
@@ -1291,7 +1356,7 @@ w314.get_formspec = function(player, pos)
 		formspec = formspec.."button[1.5,6;1,1;wcm;<]"
         formspec = formspec..lvbut(325,8,level2)
         if tonumber(level2) > 333 then
-            formspec = formspec.."label[0,3;play world 1 and 2]"
+            formspec = formspec.."label[0,2.7;play world 1 and 2]"
         end
 	return formspec		
 end
@@ -1305,7 +1370,7 @@ w41.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/100]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
         formspec = formspec..lvbut(0,25,level2)
         if tonumber(level2) > 25 then
 			formspec = formspec.."button[2.5,6;1,1;wdb;>]"
@@ -1322,7 +1387,7 @@ w42.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/100]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
 		formspec = formspec.."button[1.5,6;1,1;wda;<]"
         formspec = formspec..lvbut(25,25,level2)
         if tonumber(level2) > 50 then
@@ -1340,7 +1405,7 @@ w43.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/100]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
 		formspec = formspec.."button[1.5,6;1,1;wdb;<]"
         formspec = formspec..lvbut(50,25,level2)
         if tonumber(level2) > 75 then
@@ -1358,11 +1423,83 @@ w44.get_formspec = function(player, pos)
 	local level2 = lv:read("*l")
     lv:close()
 	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/100]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
 		formspec = formspec.."button[1.5,6;1,1;wdc;<]"
         formspec = formspec..lvbut(75,25,level2)
         if tonumber(level2) > 100 then
-            formspec = formspec.."label[0,6;more comming soon]"
+            formspec = formspec.."button[2.5,6;1,1;wde;>]"
+        end
+	return formspec		
+end
+local w45 = {}
+w45.get_formspec = function(player, pos)
+	if player == nil then
+        return
+    end
+	local player_inv = player:get_inventory()
+    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
+	local level2 = lv:read("*l")
+    lv:close()
+	formspec = "size[5,6.5]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
+		formspec = formspec.."button[1.5,6;1,1;wdd;<]"
+        formspec = formspec..lvbut(100,25,level2)
+        if tonumber(level2) > 125 then
+            formspec = formspec.."button[2.5,6;1,1;wdf;>]"
+        end
+	return formspec		
+end
+local w46 = {}
+w46.get_formspec = function(player, pos)
+	if player == nil then
+        return
+    end
+	local player_inv = player:get_inventory()
+    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
+	local level2 = lv:read("*l")
+    lv:close()
+	formspec = "size[5,6.5]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
+		formspec = formspec.."button[1.5,6;1,1;wde;<]"
+        formspec = formspec..lvbut(125,25,level2)
+        if tonumber(level2) > 150 then
+            formspec = formspec.."button[2.5,6;1,1;wdg;>]"
+        end
+	return formspec		
+end
+local w47 = {}
+w47.get_formspec = function(player, pos)
+	if player == nil then
+        return
+    end
+	local player_inv = player:get_inventory()
+    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
+	local level2 = lv:read("*l")
+    lv:close()
+	formspec = "size[5,6.5]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
+		formspec = formspec.."button[1.5,6;1,1;wdf;<]"
+        formspec = formspec..lvbut(150,25,level2)
+        if tonumber(level2) > 175 then
+            formspec = formspec.."button[2.5,6;1,1;wdh;>]"
+        end
+	return formspec		
+end
+local w48 = {}
+w48.get_formspec = function(player, pos)
+	if player == nil then
+        return
+    end
+	local player_inv = player:get_inventory()
+    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
+	local level2 = lv:read("*l")
+    lv:close()
+	formspec = "size[5,6.5]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
+		formspec = formspec.."button[1.5,6;1,1;wdg;<]"
+        formspec = formspec..lvbut(175,25,level2)
+        if tonumber(level2) > 200 then
+            formspec = formspec.."label[0,5.7;more comming soon]"
         end
 	return formspec		
 end
@@ -1482,7 +1619,15 @@ minetest.register_node("sudoku:new_w4",{
             minetest.show_formspec(player:get_player_name(), "w43" , w43.get_formspec(player))
 		elseif page == 4 then
             minetest.show_formspec(player:get_player_name(), "w44" , w44.get_formspec(player))
-        end
+		elseif page == 5 then
+            minetest.show_formspec(player:get_player_name(), "w45" , w45.get_formspec(player))
+        elseif page == 6 then
+            minetest.show_formspec(player:get_player_name(), "w46" , w46.get_formspec(player))
+		elseif page == 7 then
+            minetest.show_formspec(player:get_player_name(), "w47" , w47.get_formspec(player))
+		elseif page == 8 then
+            minetest.show_formspec(player:get_player_name(), "w48" , w48.get_formspec(player))
+		end
     end,
 })
 minetest.register_node("sudoku:new_w5",{
@@ -1493,7 +1638,7 @@ minetest.register_node("sudoku:new_w5",{
         minetest.show_formspec(player:get_player_name(), "w3" , w3.get_formspec(player))
     end,
 })
-minetest.register_node("sudoku:new_ws",{
+minetest.register_node("sudoku:new_w6",{
 	tiles  = {"default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png^sudoku_new_w6.png"},
 	description = "New",
     --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
@@ -1501,12 +1646,28 @@ minetest.register_node("sudoku:new_ws",{
         minetest.show_formspec(player:get_player_name(), "w3" , w3.get_formspec(player))
     end,
 })
-minetest.register_node("sudoku:finisch",{
-	tiles  = {"default_silver_sandstone_block.png^sudoku_finisch.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png"},
+minetest.register_node("sudoku:new_w7",{
+	tiles  = {"default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png^sudoku_new_w7.png"},
 	description = "New",
     --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
     on_punch = function(pos, node, player, pointed_thing)
-        Finisch(player)
+        minetest.show_formspec(player:get_player_name(), "w3" , w3.get_formspec(player))
+    end,
+})
+minetest.register_node("sudoku:save",{
+	tiles  = {"default_silver_sandstone_block.png^sudoku_save.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png"},
+	description = "Save",
+    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+    on_punch = function(pos, node, player, pointed_thing)
+        minetest.chat_send_all("comming soon")
+    end,
+})
+minetest.register_node("sudoku:load",{
+	tiles  = {"default_silver_sandstone_block.png^sudoku_load.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png"},
+	description = "Load",
+    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
+    on_punch = function(pos, node, player, pointed_thing)
+        minetest.chat_send_all("comming soon")
     end,
 })
 minetest.register_on_player_receive_fields(function(player, formname, fields)
@@ -1544,7 +1705,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
             end
         end
 	end
-	if formname == "w41" or formname == "w42" or formname == "w43" or formname == "w44" then
+	if formname == "w41" or formname == "w42" or formname == "w43" or formname == "w44" or formname == "w45" or formname == "w46" or formname == "w47" or formname == "w48" then
         for k, v in pairs(fields) do
             if tonumber(v) ~= nil then
                 New(player,"4_"..v)
@@ -1652,6 +1813,18 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	elseif fields.wdd then
         player_inv:set_stack("page4",  1, "default:dirt 3")
         minetest.show_formspec(player:get_player_name(), "w44" , w44.get_formspec(player))
+	elseif fields.wde then
+        player_inv:set_stack("page4",  1, "default:dirt 4")
+        minetest.show_formspec(player:get_player_name(), "w45" , w45.get_formspec(player))
+	elseif fields.wdf then
+        player_inv:set_stack("page4",  1, "default:dirt 5")
+        minetest.show_formspec(player:get_player_name(), "w46" , w46.get_formspec(player))
+	elseif fields.wdg then
+        player_inv:set_stack("page4",  1, "default:dirt 6")
+        minetest.show_formspec(player:get_player_name(), "w47" , w47.get_formspec(player))
+	elseif fields.wdh then
+        player_inv:set_stack("page4",  1, "default:dirt 7")
+        minetest.show_formspec(player:get_player_name(), "w48" , w48.get_formspec(player))
     else
         minetest.show_formspec(player:get_player_name(), "", "")
 	end
