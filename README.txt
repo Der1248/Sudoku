@@ -1,7 +1,7 @@
 A Game by 1248
 
 Thanks to:
-/
+jumali for testing and making some sudokus
 
 Info:
 Sudoku is a mini game in minetest.
