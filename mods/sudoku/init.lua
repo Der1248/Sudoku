@@ -69,9 +69,8 @@ end
 
 minetest.register_on_joinplayer(function(player)
     player:set_inventory_formspec("")
-	if player:get_player_name() == "singleplayer" then
-    else
-        minetest.kick_player(player:get_player_name(), "you can play sudoku only as 'singleplayer'")
+	if not minetest.is_singleplayer() then
+        minetest.kick_player(player:get_player_name(), "You can play Sudoku only in singleplayer")
     end
 end)
 
