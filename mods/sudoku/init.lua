@@ -8,7 +8,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=10},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "For Minetest 	  :  5.6.x",
+		text = "For Minetest 	  :  5.7.0",
 	})
 	player:hud_add({
 		hud_elem_type = "text",
@@ -16,7 +16,7 @@ minetest.register_on_joinplayer(function(player)
 		offset = {x=0, y=30},
 		alignment = {x=1, y=0},
 		number = 0xFFFFFF ,
-		text = "Game Version	 :  1.10.3",
+		text = "Game Version	 :  1.11.0",
 	})
     hud_levels[name] = player:hud_add({
 		hud_elem_type = "text",
@@ -28,9 +28,12 @@ minetest.register_on_joinplayer(function(player)
 	})
 end)
 
-local map_version = 2
+local map_version = 3
 
 local caps = {times = {42, 42, 42}, uses = 0, maxlevel = 256}
+minetest.register_alias("mapgen_stone", "sudoku:wall")
+minetest.register_alias("mapgen_water_source", "sudoku:wall")
+minetest.register_alias("mapgen_river_water_source", "sudoku:wall")
 
 minetest.register_item(":", {
 	type = "none",
@@ -56,7 +59,7 @@ main.get_formspec = function(player, pos)
 	if player == nil then
         return
     end
-	formspec = "size[9,10.3]"
+	local formspec = "size[9,10.3]"
         .."background[9,10.3;1,1;gui_formbg.png;true]"
         .."listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF]"
         .."bgcolor[#080808BB;true]"
@@ -69,13 +72,20 @@ end
 
 minetest.register_on_joinplayer(function(player)
     player:set_inventory_formspec("")
-	if player:get_player_name() == "singleplayer" then
-    else
-        minetest.kick_player(player:get_player_name(), "you can play sudoku only as 'singleplayer'")
+	if not minetest.is_singleplayer() then
+        minetest.kick_player(player:get_player_name(), "You can play Sudoku only in singleplayer")
     end
-end)
-
-minetest.register_on_joinplayer(function(player)
+    local formspec = [[
+			bgcolor[#080808BB;true]
+			listcolors[#00000069;#5A5A5A;#141318;#30434C;#FFF] ]]
+	local name = player:get_player_name()
+	local info = minetest.get_player_information(name)
+	if info.formspec_version > 1 then
+		formspec = formspec .. "background9[5,5;1,1;gui_formbg.png;true;10]"
+	else
+		formspec = formspec .. "background[5,5;1,1;gui_formbg.png;true]"
+	end
+	player:set_formspec_prepend(formspec)
     player:set_inventory_formspec("")
 end)
 
@@ -97,6 +107,15 @@ minetest.register_globalstep(function(dtime)
 		SetItems(player)
     end
 end)
+local timer = 0
+minetest.register_globalstep(function(dtime)
+	timer = timer + dtime
+	if timer >= 1 then
+		timer = 0
+		minetest.set_timeofday(0.5)
+    end
+end)
+
 function file_check(file_name)
 	local file_found=io.open(file_name, "r")
 	if file_found==nil then
@@ -107,69 +126,62 @@ function file_check(file_name)
 	return file_found
 end
 minetest.register_on_joinplayer(function(player)
-    local override_table = player:get_physics_override()
 	local player_inv = player:get_inventory()
-    override_table.new_move = false
-    override_table.sneak_glitch = true
-    player:set_physics_override(override_table)
-    minetest.setting_set("time_speed", "0")
-    minetest.set_timeofday(0.5)
-    minetest.setting_set("node_highlighting", "box")
     player:hud_set_hotbar_itemcount(9)
 	if file_check(minetest.get_worldpath().."/level1.txt") == true then
 	else
-		file = io.open(minetest.get_worldpath().."/level1.txt", "w")
+		local file = io.open(minetest.get_worldpath().."/level1.txt", "w")
 		file:write("1")
 		file:close()
 	end
     if file_check(minetest.get_worldpath().."/level2.txt") == true then
 	else
-		file = io.open(minetest.get_worldpath().."/level2.txt", "w")
+		local file = io.open(minetest.get_worldpath().."/level2.txt", "w")
 		file:write("1")
 		file:close()
 	end
     if file_check(minetest.get_worldpath().."/level3.txt") == true then
 	else
-		file = io.open(minetest.get_worldpath().."/level3.txt", "w")
+		local file = io.open(minetest.get_worldpath().."/level3.txt", "w")
 		file:write("1")
 		file:close()
 	end
     if file_check(minetest.get_worldpath().."/level4.txt") == true then
 	else
-		file = io.open(minetest.get_worldpath().."/level4.txt", "w")
+		local file = io.open(minetest.get_worldpath().."/level4.txt", "w")
 		file:write("1")
 		file:close()
 	end
 	if file_check(minetest.get_worldpath().."/level5.txt") == true then
 	else
-		file = io.open(minetest.get_worldpath().."/level5.txt", "w")
+		local file = io.open(minetest.get_worldpath().."/level5.txt", "w")
 		file:write("1")
 		file:close()
 	end
 	if file_check(minetest.get_worldpath().."/Map_Version.txt") ~= true  then
 		minetest.place_schematic({ x = 9, y = 7, z = -93 }, minetest.get_modpath("sudoku").."/schematics/sector1.mts","0")
-		player:setpos({x=19, y=8, z=-88})
+		player:set_pos({x=19, y=8, z=-88})
 		for j=1,9 do
 			local ll = player_inv:get_stack("ll", 1):get_count()
 			player_inv:set_stack("main", j, "")
 		end
-		file = io.open(minetest.get_worldpath().."/Map_Version.txt", "w")
+		local file = io.open(minetest.get_worldpath().."/Map_Version.txt", "w")
 		file:write(map_version)
 		file:close()
 	end
-	file = io.open(minetest.get_worldpath().."/Map_Version.txt", "r")
+	local file = io.open(minetest.get_worldpath().."/Map_Version.txt", "r")
 	local map_ver = file:read("*l")
     file:close()
 	if tonumber(map_ver) < map_version then
 		minetest.place_schematic({ x = 9, y = 7, z = -93 }, minetest.get_modpath("sudoku").."/schematics/sector1.mts","0")
-		player:setpos({x=19, y=8, z=-88})
+		player:set_pos({x=19, y=8, z=-88})
 		local player_inv = player:get_inventory()
 		for j=1,9 do
 			local ll = player_inv:get_stack("ll", 1):get_count()
 			player_inv:set_stack("main", j, "")
 		end
 		player_inv:set_stack("ll", 1, "")
-		file = io.open(minetest.get_worldpath().."/Map_Version.txt", "w")
+		local file = io.open(minetest.get_worldpath().."/Map_Version.txt", "w")
 		file:write(map_version)
 		file:close()
 	end
@@ -215,7 +227,7 @@ minetest.register_node("sudoku:meselamp", {
 	sunlight_propagates = true,
 	is_ground_content = false,
 	--groups = {cracky = 3, oddly_breakable_by_hand = 3},
-	light_source = 15,
+	light_source = 14,
 })
 for i=0,9 do
     minetest.register_node("sudoku:"..i,{
@@ -254,12 +266,13 @@ function New(player,page)
     local player_inv = player:get_inventory()
     player_inv:set_list("main", nil)
     player_inv:set_size("main", 32)
-    lv = io.open(minetest.get_worldpath().."/level1.txt", "r")
+    local lv = io.open(minetest.get_worldpath().."/level1.txt", "r")
 	local level = lv:read("*l")
     lv:close()
     local lv = io.open(minetest.get_modpath("sudoku").."/lv"..page..".txt", "r")
     local ar1 = {}
     local ar2 = {}
+    minetest.set_node({x=20, y=7, z=-85}, {name="sudoku:desert"})
     for i=1,9 do
 	    ar1[i] = lv:read("*l")
     end
@@ -745,12 +758,12 @@ function Finisch(player,number,pos)
         local player_inv = player:get_inventory()
         local ll = player_inv:get_stack("ll", 1):get_count()
         local level2 = player_inv:get_stack("l", ll):get_count()
-        lv = io.open(minetest.get_worldpath().."/level"..ll..".txt", "r")
+        local lv = io.open(minetest.get_worldpath().."/level"..ll..".txt", "r")
 	    local level = lv:read("*l")
         lv:close()
         minetest.chat_send_all("level completed")
         if tonumber(level) == tonumber(level2) then
-            le = io.open(minetest.get_worldpath().."/level"..ll..".txt", "w")
+            local le = io.open(minetest.get_worldpath().."/level"..ll..".txt", "w")
 		    le:write(level+1)
 		    le:close()
         end
@@ -840,669 +853,28 @@ function lvbut(from,num,level2)
     end
     return formspec
 end
+function level_formspec(player,file,max_level,level_count,previous_levels,previous_page,previous_page_name,next_page,next_name,pos)
+	local player_inv = player:get_inventory()
+	lv = io.open(minetest.get_worldpath().."/"..file..".txt", "r")
+	local level2 = lv:read("*l")
+    lv:close()
+    local player_inv = player:get_inventory()
+	formspec = "size[5,6.5]"
+        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/"..max_level.."]"
+		if previous_page then
+			formspec = formspec.."button[1.5,6;1,1;"..previous_page_name..";<]"
+		end
+		formspec = formspec..lvbut(previous_levels,level_count,level2)
+		if tonumber(level2) > (previous_levels+level_count) then
+			if next_page then
+				formspec = formspec.."button[2.5,6;1,1;"..next_name..";>]"
+			else
+				formspec = formspec.."label[0,"..pos..";"..next_name.."]"
+			end
+		end
+	return formspec
+end
 
-local w11 = {}
-w11.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level1.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-        formspec = formspec..lvbut(0,25,level2)
-        if tonumber(level2) > 25 then
-            formspec = formspec.."button[2.5,6;1,1;wab;>]"
-        end
-	return formspec		
-end
-local w12 = {}
-w12.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level1.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-		formspec = formspec.."button[1.5,6;1,1;waa;<]"
-        formspec = formspec..lvbut(25,25,level2)
-        if tonumber(level2) > 50 then
-            formspec = formspec.."button[2.5,6;1,1;wac;>]"
-        end
-	return formspec		
-end
-local w13 = {}
-w13.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level1.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-		formspec = formspec.."button[1.5,6;1,1;wab;<]"
-        formspec = formspec..lvbut(50,25,level2)
-        if tonumber(level2) > 75 then
-            formspec = formspec.."button[2.5,6;1,1;wad;>]"
-        end
-	return formspec		
-end
-local w14 = {}
-w14.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level1.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-		formspec = formspec.."button[1.5,6;1,1;wac;<]"
-        formspec = formspec..lvbut(75,25,level2)
-        if tonumber(level2) > 100 then
-            formspec = formspec.."button[2.5,6;1,1;wae;>]"
-        end
-	return formspec		
-end
-local w15 = {}
-w15.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level1.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-		formspec = formspec.."button[1.5,6;1,1;wad;<]"
-        formspec = formspec..lvbut(100,25,level2)
-        if tonumber(level2) > 125 then
-            formspec = formspec.."button[2.5,6;1,1;waf;>]"
-        end
-	return formspec		
-end
-local w16 = {}
-w16.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level1.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-		formspec = formspec.."button[1.5,6;1,1;wae;<]"
-        formspec = formspec..lvbut(125,25,level2)
-        if tonumber(level2) > 150 then
-            formspec = formspec.."button[2.5,6;1,1;wag;>]"
-        end
-	return formspec		
-end
-local w17 = {}
-w17.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level1.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/160]"
-		formspec = formspec.."button[1.5,6;1,1;waf;<]"
-        formspec = formspec..lvbut(150,10,level2)
-        if tonumber(level2) > 160 then
-            formspec = formspec.."label[0,2.7;play world 2 and 3]"
-        end
-	return formspec		
-end
-local w21 = {}
-w21.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level2.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-        formspec = formspec..lvbut(0,25,level2)
-        if tonumber(level2) > 25 then
-            formspec = formspec.."button[2.5,6;1,1;wbb;>]"
-        end
-	return formspec		
-end
-local w22 = {}
-w22.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level2.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-		formspec = formspec.."button[1.5,6;1,1;wba;<]"
-        formspec = formspec..lvbut(25,25,level2)
-        if tonumber(level2) > 50 then
-            formspec = formspec.."button[2.5,6;1,1;wbc;>]"
-        end
-	return formspec		
-end
-local w23 = {}
-w23.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level2.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-		formspec = formspec.."button[1.5,6;1,1;wbb;<]"
-        formspec = formspec..lvbut(50,25,level2)
-        if tonumber(level2) > 75 then
-            formspec = formspec.."button[2.5,6;1,1;wbd;>]"
-        end
-	return formspec		
-end
-local w24 = {}
-w24.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level2.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-		formspec = formspec.."button[1.5,6;1,1;wbc;<]"
-        formspec = formspec..lvbut(75,25,level2)
-        if tonumber(level2) > 100 then
-            formspec = formspec.."button[2.5,6;1,1;wbe;>]"
-        end
-	return formspec		
-end
-local w25 = {}
-w25.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level2.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-		formspec = formspec.."button[1.5,6;1,1;wbd;<]"
-        formspec = formspec..lvbut(100,25,level2)
-        if tonumber(level2) > 125 then
-            formspec = formspec.."button[2.5,6;1,1;wbf;>]"
-        end
-	return formspec		
-end
-local w26 = {}
-w26.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level2.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-		formspec = formspec.."button[1.5,6;1,1;wbe;<]"
-        formspec = formspec..lvbut(125,25,level2)
-        if tonumber(level2) > 150 then
-            formspec = formspec.."button[2.5,6;1,1;wbg;>]"
-        end
-	return formspec		
-end
-local w27 = {}
-w27.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level2.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-		formspec = formspec.."button[1.5,6;1,1;wbf;<]"
-        formspec = formspec..lvbut(150,25,level2)
-        if tonumber(level2) > 175 then
-            formspec = formspec.."button[2.5,6;1,1;wbh;>]"
-        end
-	return formspec		
-end
-local w28 = {}
-w28.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level2.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/190]"
-		formspec = formspec.."button[1.5,6;1,1;wbg;<]"
-        formspec = formspec..lvbut(175,15,level2)
-        if tonumber(level2) > 190 then
-            formspec = formspec.."label[0,3.7;play world 1 and 3]"
-        end
-	return formspec		
-end
-local w31 = {}
-w31.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-        formspec = formspec..lvbut(0,25,level2)
-        if tonumber(level2) > 25 then
-            formspec = formspec.."button[2.5,6;1,1;wcb;>]"
-        end
-	return formspec		
-end
-local w32 = {}
-w32.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wca;<]"
-        formspec = formspec..lvbut(25,25,level2)
-        if tonumber(level2) > 50 then
-            formspec = formspec.."button[2.5,6;1,1;wcc;>]"
-        end
-	return formspec		
-end
-local w33 = {}
-w33.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wcb;<]"
-        formspec = formspec..lvbut(50,25,level2)
-        if tonumber(level2) > 75 then
-            formspec = formspec.."button[2.5,6;1,1;wcd;>]"
-        end
-	return formspec		
-end
-local w34 = {}
-w34.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wcc;<]"
-        formspec = formspec..lvbut(75,25,level2)
-        if tonumber(level2) > 100 then
-            formspec = formspec.."button[2.5,6;1,1;wce;>]"
-        end
-	return formspec		
-end
-local w35 = {}
-w35.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wcd;<]"
-        formspec = formspec..lvbut(100,25,level2)
-        if tonumber(level2) > 125 then
-            formspec = formspec.."button[2.5,6;1,1;wcf;>]"
-        end
-	return formspec		
-end
-local w36 = {}
-w36.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wce;<]"
-        formspec = formspec..lvbut(125,25,level2)
-        if tonumber(level2) > 150 then
-            formspec = formspec.."button[2.5,6;1,1;wcg;>]"
-        end
-	return formspec		
-end
-local w37 = {}
-w37.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wcf;<]"
-        formspec = formspec..lvbut(150,25,level2)
-        if tonumber(level2) > 175 then
-            formspec = formspec.."button[2.5,6;1,1;wch;>]"
-        end
-	return formspec		
-end
-local w38 = {}
-w38.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wcg;<]"
-        formspec = formspec..lvbut(175,25,level2)
-        if tonumber(level2) > 200 then
-            formspec = formspec.."button[2.5,6;1,1;wci;>]"
-        end
-	return formspec		
-end
-local w39 = {}
-w39.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wch;<]"
-        formspec = formspec..lvbut(200,25,level2)
-        if tonumber(level2) > 225 then
-            formspec = formspec.."button[2.5,6;1,1;wcj;>]"
-        end
-	return formspec		
-end
-local w310 = {}
-w310.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wci;<]"
-        formspec = formspec..lvbut(225,25,level2)
-        if tonumber(level2) > 250 then
-            formspec = formspec.."button[2.5,6;1,1;wck;>]"
-        end
-	return formspec		
-end
-local w311 = {}
-w311.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wcj;<]"
-        formspec = formspec..lvbut(250,25,level2)
-        if tonumber(level2) > 275 then
-            formspec = formspec.."button[2.5,6;1,1;wcl;>]"
-        end
-	return formspec		
-end
-local w312 = {}
-w312.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wck;<]"
-        formspec = formspec..lvbut(275,25,level2)
-        if tonumber(level2) > 300 then
-            formspec = formspec.."button[2.5,6;1,1;wcm;>]"
-        end
-	return formspec		
-end
-local w313 = {}
-w313.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wcl;<]"
-        formspec = formspec..lvbut(300,25,level2)
-        if tonumber(level2) > 325 then
-            formspec = formspec.."button[2.5,6;1,1;wcn;>]"
-        end
-	return formspec		
-end
-local w314 = {}
-w314.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level3.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/333]"
-		formspec = formspec.."button[1.5,6;1,1;wcm;<]"
-        formspec = formspec..lvbut(325,8,level2)
-        if tonumber(level2) > 333 then
-            formspec = formspec.."label[0,2.7;play world 1 and 2]"
-        end
-	return formspec		
-end
-local w41 = {}
-w41.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
-        formspec = formspec..lvbut(0,25,level2)
-        if tonumber(level2) > 25 then
-			formspec = formspec.."button[2.5,6;1,1;wdb;>]"
-        end
-	return formspec		
-end
-local w42 = {}
-w42.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
-		formspec = formspec.."button[1.5,6;1,1;wda;<]"
-        formspec = formspec..lvbut(25,25,level2)
-        if tonumber(level2) > 50 then
-            formspec = formspec.."button[2.5,6;1,1;wdc;>]"
-        end
-	return formspec		
-end
-local w43 = {}
-w43.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
-		formspec = formspec.."button[1.5,6;1,1;wdb;<]"
-        formspec = formspec..lvbut(50,25,level2)
-        if tonumber(level2) > 75 then
-			formspec = formspec.."button[2.5,6;1,1;wdd;>]"
-        end
-	return formspec		
-end
-local w44 = {}
-w44.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
-		formspec = formspec.."button[1.5,6;1,1;wdc;<]"
-        formspec = formspec..lvbut(75,25,level2)
-        if tonumber(level2) > 100 then
-            formspec = formspec.."button[2.5,6;1,1;wde;>]"
-        end
-	return formspec		
-end
-local w45 = {}
-w45.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
-		formspec = formspec.."button[1.5,6;1,1;wdd;<]"
-        formspec = formspec..lvbut(100,25,level2)
-        if tonumber(level2) > 125 then
-            formspec = formspec.."button[2.5,6;1,1;wdf;>]"
-        end
-	return formspec		
-end
-local w46 = {}
-w46.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
-		formspec = formspec.."button[1.5,6;1,1;wde;<]"
-        formspec = formspec..lvbut(125,25,level2)
-        if tonumber(level2) > 150 then
-            formspec = formspec.."button[2.5,6;1,1;wdg;>]"
-        end
-	return formspec		
-end
-local w47 = {}
-w47.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
-		formspec = formspec.."button[1.5,6;1,1;wdf;<]"
-        formspec = formspec..lvbut(150,25,level2)
-        if tonumber(level2) > 175 then
-            formspec = formspec.."button[2.5,6;1,1;wdh;>]"
-        end
-	return formspec		
-end
-local w48 = {}
-w48.get_formspec = function(player, pos)
-	if player == nil then
-        return
-    end
-	local player_inv = player:get_inventory()
-    lv = io.open(minetest.get_worldpath().."/level4.txt", "r")
-	local level2 = lv:read("*l")
-    lv:close()
-	formspec = "size[5,6.5]"
-        .."label[0,0;World Level:     "..(tonumber(level2)-1).."/200]"
-		formspec = formspec.."button[1.5,6;1,1;wdg;<]"
-        formspec = formspec..lvbut(175,25,level2)
-        if tonumber(level2) > 200 then
-            formspec = formspec.."label[0,5.7;more comming soon]"
-        end
-	return formspec		
-end
 local w3 = {}
 w3.get_formspec = function(player, pos)
 	if player == nil then
@@ -1516,6 +888,7 @@ w3.get_formspec = function(player, pos)
         .."label[0,0;Comming soon]"
 	return formspec		
 end
+
 minetest.register_node("sudoku:new_w1",{
 	tiles  = {"default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png^sudoku_new_w1.png"},
 	description = "New",
@@ -1524,22 +897,23 @@ minetest.register_node("sudoku:new_w1",{
         local player_inv = player:get_inventory()
         local page = player_inv:get_stack("page1", 1):get_count()+1
         if page == 1 then
-            minetest.show_formspec(player:get_player_name(), "w11" , w11.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w11" , level_formspec(player,"level1",160,25,0,false,"",true,"wab",""))
         elseif page == 2 then
-            minetest.show_formspec(player:get_player_name(), "w12" , w12.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w12" , level_formspec(player,"level1",160,25,25,true,"waa",true,"wac",""))
         elseif page == 3 then
-            minetest.show_formspec(player:get_player_name(), "w13" , w13.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w13" , level_formspec(player,"level1",160,25,50,true,"wab",true,"wad",""))
         elseif page == 4 then
-            minetest.show_formspec(player:get_player_name(), "w14" , w14.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w14" , level_formspec(player,"level1",160,25,75,true,"wac",true,"wae",""))
         elseif page == 5 then
-            minetest.show_formspec(player:get_player_name(), "w15" , w15.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w15" , level_formspec(player,"level1",160,25,100,true,"wad",true,"waf",""))
         elseif page == 6 then
-            minetest.show_formspec(player:get_player_name(), "w16" , w16.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w16" , level_formspec(player,"level1",160,25,125,true,"wae",true,"wag",""))
         elseif page == 7 then
-            minetest.show_formspec(player:get_player_name(), "w17" , w17.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w17" , level_formspec(player,"level1",160,10,150,true,"waf",false,"You have finished world 1!","2.7"))
         end
     end,
 })
+
 minetest.register_node("sudoku:new_w2",{
 	tiles  = {"default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png^sudoku_new_w2.png"},
 	description = "New",
@@ -1548,24 +922,25 @@ minetest.register_node("sudoku:new_w2",{
         local player_inv = player:get_inventory()
         local page = player_inv:get_stack("page2", 1):get_count()+1
         if page == 1 then
-            minetest.show_formspec(player:get_player_name(), "w21" , w21.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w21" , level_formspec(player,"level2",190,25,0,false,"",true,"wbb",""))
         elseif page == 2 then
-            minetest.show_formspec(player:get_player_name(), "w22" , w22.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w22" , level_formspec(player,"level2",190,25,25,true,"wba",true,"wbc",""))
         elseif page == 3 then
-            minetest.show_formspec(player:get_player_name(), "w23" , w23.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w23" , level_formspec(player,"level2",190,25,50,true,"wbb",true,"wbd",""))
         elseif page == 4 then
-            minetest.show_formspec(player:get_player_name(), "w24" , w24.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w24" , level_formspec(player,"level2",190,25,75,true,"wbc",true,"wbe",""))
         elseif page == 5 then
-            minetest.show_formspec(player:get_player_name(), "w25" , w25.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w25" , level_formspec(player,"level2",190,25,100,true,"wbd",true,"wbf",""))
         elseif page == 6 then
-            minetest.show_formspec(player:get_player_name(), "w26" , w26.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w26" , level_formspec(player,"level2",190,25,125,true,"wbe",true,"wbg",""))
         elseif page == 7 then
-            minetest.show_formspec(player:get_player_name(), "w27" , w27.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w27" , level_formspec(player,"level2",190,25,150,true,"wbf",true,"wbh",""))
         elseif page == 8 then
-            minetest.show_formspec(player:get_player_name(), "w28" , w28.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w28" , level_formspec(player,"level2",190,15,175,true,"wbg",false,"You have finished world 2!","3.7"))
         end
     end,
 })
+
 minetest.register_node("sudoku:new_w3",{
 	tiles  = {"default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png^sudoku_new_w3.png"},
 	description = "New",
@@ -1574,36 +949,37 @@ minetest.register_node("sudoku:new_w3",{
         local player_inv = player:get_inventory()
         local page = player_inv:get_stack("page3", 1):get_count()+1
         if page == 1 then
-            minetest.show_formspec(player:get_player_name(), "w31" , w31.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w31" , level_formspec(player,"level3",333,25,0,false,"",true,"wcb",""))
         elseif page == 2 then
-            minetest.show_formspec(player:get_player_name(), "w32" , w32.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w32" , level_formspec(player,"level3",333,25,25,true,"wca",true,"wcc",""))
         elseif page == 3 then
-            minetest.show_formspec(player:get_player_name(), "w33" , w33.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w33" , level_formspec(player,"level3",333,25,50,true,"wcb",true,"wcd",""))
         elseif page == 4 then
-            minetest.show_formspec(player:get_player_name(), "w34" , w34.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w34" , level_formspec(player,"level3",333,25,75,true,"wcc",true,"wce",""))
         elseif page == 5 then
-            minetest.show_formspec(player:get_player_name(), "w35" , w35.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w35" , level_formspec(player,"level3",333,25,100,true,"wcd",true,"wcf",""))
         elseif page == 6 then
-            minetest.show_formspec(player:get_player_name(), "w36" , w36.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w36" , level_formspec(player,"level3",333,25,125,true,"wce",true,"wcg",""))
         elseif page == 7 then
-            minetest.show_formspec(player:get_player_name(), "w37" , w37.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w37" , level_formspec(player,"level3",333,25,150,true,"wcf",true,"wch",""))
         elseif page == 8 then
-            minetest.show_formspec(player:get_player_name(), "w38" , w38.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w38" , level_formspec(player,"level3",333,25,175,true,"wcg",true,"wci",""))
         elseif page == 9 then
-            minetest.show_formspec(player:get_player_name(), "w39" , w39.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w39" , level_formspec(player,"level3",333,25,200,true,"wch",true,"wcj",""))
         elseif page == 10 then
-            minetest.show_formspec(player:get_player_name(), "w310" , w310.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w310" , level_formspec(player,"level3",333,25,225,true,"wci",true,"wck",""))
         elseif page == 11 then
-            minetest.show_formspec(player:get_player_name(), "w311" , w311.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w311" , level_formspec(player,"level3",333,25,250,true,"wcj",true,"wcl",""))
         elseif page == 12 then
-            minetest.show_formspec(player:get_player_name(), "w312" , w312.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w312" , level_formspec(player,"level3",333,25,275,true,"wck",true,"wcm",""))
         elseif page == 13 then
-            minetest.show_formspec(player:get_player_name(), "w313" , w313.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w313" , level_formspec(player,"level3",333,25,300,true,"wcl",true,"wcn",""))
         elseif page == 14 then
-            minetest.show_formspec(player:get_player_name(), "w314" , w314.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w314" , level_formspec(player,"level3",333,8,325,true,"wcm",false,"You have finished world 3!","2.7"))
         end
     end,
 })
+
 minetest.register_node("sudoku:new_w4",{
 	tiles  = {"default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png^sudoku_new_w4.png"},
 	description = "New",
@@ -1612,24 +988,33 @@ minetest.register_node("sudoku:new_w4",{
 		local player_inv = player:get_inventory()
         local page = player_inv:get_stack("page4", 1):get_count()+1
         if page == 1 then
-            minetest.show_formspec(player:get_player_name(), "w41" , w41.get_formspec(player))
-		elseif page == 2 then
-            minetest.show_formspec(player:get_player_name(), "w42" , w42.get_formspec(player))
-		elseif page == 3 then
-            minetest.show_formspec(player:get_player_name(), "w43" , w43.get_formspec(player))
-		elseif page == 4 then
-            minetest.show_formspec(player:get_player_name(), "w44" , w44.get_formspec(player))
-		elseif page == 5 then
-            minetest.show_formspec(player:get_player_name(), "w45" , w45.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w41" , level_formspec(player,"level4",300,25,0,false,"",true,"wdb",""))
+        elseif page == 2 then
+            minetest.show_formspec(player:get_player_name(), "w42" , level_formspec(player,"level4",300,25,25,true,"wda",true,"wdc",""))
+        elseif page == 3 then
+            minetest.show_formspec(player:get_player_name(), "w43" , level_formspec(player,"level4",300,25,50,true,"wdb",true,"wdd",""))
+        elseif page == 4 then
+            minetest.show_formspec(player:get_player_name(), "w44" , level_formspec(player,"level4",300,25,75,true,"wdc",true,"wde",""))
+        elseif page == 5 then
+            minetest.show_formspec(player:get_player_name(), "w45" , level_formspec(player,"level4",300,25,100,true,"wdd",true,"wdf",""))
         elseif page == 6 then
-            minetest.show_formspec(player:get_player_name(), "w46" , w46.get_formspec(player))
-		elseif page == 7 then
-            minetest.show_formspec(player:get_player_name(), "w47" , w47.get_formspec(player))
-		elseif page == 8 then
-            minetest.show_formspec(player:get_player_name(), "w48" , w48.get_formspec(player))
+            minetest.show_formspec(player:get_player_name(), "w46" , level_formspec(player,"level4",300,25,125,true,"wde",true,"wdg",""))
+        elseif page == 7 then
+            minetest.show_formspec(player:get_player_name(), "w47" , level_formspec(player,"level4",300,25,150,true,"wdf",true,"wdh",""))
+        elseif page == 8 then
+            minetest.show_formspec(player:get_player_name(), "w48" , level_formspec(player,"level4",300,25,175,true,"wdg",true,"wdi",""))
+        elseif page == 9 then
+            minetest.show_formspec(player:get_player_name(), "w49" , level_formspec(player,"level4",300,25,200,true,"wdh",true,"wdj",""))
+        elseif page == 10 then
+            minetest.show_formspec(player:get_player_name(), "w410" , level_formspec(player,"level4",300,25,225,true,"wdi",true,"wdk",""))
+        elseif page == 11 then
+            minetest.show_formspec(player:get_player_name(), "w411" , level_formspec(player,"level4",300,25,250,true,"wdj",true,"wdl",""))
+        elseif page == 12 then
+            minetest.show_formspec(player:get_player_name(), "w412" , level_formspec(player,"level4",300,25,275,true,"wdk",false,"You have finished world 4!","5.7"))
 		end
     end,
 })
+
 minetest.register_node("sudoku:new_w5",{
 	tiles  = {"default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png^sudoku_new_w5.png"},
 	description = "New",
@@ -1654,22 +1039,7 @@ minetest.register_node("sudoku:new_w7",{
         minetest.show_formspec(player:get_player_name(), "w3" , w3.get_formspec(player))
     end,
 })
-minetest.register_node("sudoku:save",{
-	tiles  = {"default_silver_sandstone_block.png^sudoku_save.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png"},
-	description = "Save",
-    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
-    on_punch = function(pos, node, player, pointed_thing)
-        minetest.chat_send_all("comming soon")
-    end,
-})
-minetest.register_node("sudoku:load",{
-	tiles  = {"default_silver_sandstone_block.png^sudoku_load.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png","default_silver_sandstone_block.png"},
-	description = "Load",
-    --groups = {snappy=1,choppy=2,oddly_breakable_by_hand=2,flammable=3},
-    on_punch = function(pos, node, player, pointed_thing)
-        minetest.chat_send_all("comming soon")
-    end,
-})
+
 minetest.register_on_player_receive_fields(function(player, formname, fields)
     local player_inv = player:get_inventory()
     player_inv:set_size("ll", 1)
@@ -1705,7 +1075,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
             end
         end
 	end
-	if formname == "w41" or formname == "w42" or formname == "w43" or formname == "w44" or formname == "w45" or formname == "w46" or formname == "w47" or formname == "w48" then
+	if formname == "w41" or formname == "w42" or formname == "w43" or formname == "w44" or formname == "w45" or formname == "w46" or formname == "w47" or formname == "w48" or formname == "w49" or formname == "w410" or formname == "w411" or formname == "w412" then
         for k, v in pairs(fields) do
             if tonumber(v) ~= nil then
                 New(player,"4_"..v)
@@ -1716,115 +1086,127 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	end
 	if fields.waa then
         player_inv:set_stack("page1",  1, nil)
-        minetest.show_formspec(player:get_player_name(), "w11" , w11.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w11" , level_formspec(player,"level1",160,25,0,false,"",true,"wab",""))
     elseif fields.wab then
         player_inv:set_stack("page1",  1, "default:dirt")
-        minetest.show_formspec(player:get_player_name(), "w12" , w12.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w12" , level_formspec(player,"level1",160,25,25,true,"waa",true,"wac",""))
     elseif fields.wac then
         player_inv:set_stack("page1",  1, "default:dirt 2")
-        minetest.show_formspec(player:get_player_name(), "w13" , w13.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w13" , level_formspec(player,"level1",160,25,50,true,"wab",true,"wad",""))
     elseif fields.wad then
         player_inv:set_stack("page1",  1, "default:dirt 3")
-        minetest.show_formspec(player:get_player_name(), "w14" , w14.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w14" , level_formspec(player,"level1",160,25,75,true,"wac",true,"wae",""))
     elseif fields.wae then
         player_inv:set_stack("page1",  1, "default:dirt 4")
-        minetest.show_formspec(player:get_player_name(), "w15" , w15.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w15" , level_formspec(player,"level1",160,25,100,true,"wad",true,"waf",""))
     elseif fields.waf then
         player_inv:set_stack("page1",  1, "default:dirt 5")
-        minetest.show_formspec(player:get_player_name(), "w16" , w16.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w16" , level_formspec(player,"level1",160,25,125,true,"wae",true,"wag",""))
     elseif fields.wag then
         player_inv:set_stack("page1",  1, "default:dirt 6")
-        minetest.show_formspec(player:get_player_name(), "w17" , w17.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w17" , level_formspec(player,"level1",160,10,150,true,"waf",false,"You have finished world 1!","2.7"))
     elseif fields.wba then
         player_inv:set_stack("page2",  1, nil)
-        minetest.show_formspec(player:get_player_name(), "w21" , w21.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w21" , level_formspec(player,"level2",190,25,0,false,"",true,"wbb",""))
     elseif fields.wbb then
         player_inv:set_stack("page2",  1, "default:dirt")
-        minetest.show_formspec(player:get_player_name(), "w22" , w22.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w22" , level_formspec(player,"level2",190,25,25,true,"wba",true,"wbc",""))
     elseif fields.wbc then
         player_inv:set_stack("page2",  1, "default:dirt 2")
-        minetest.show_formspec(player:get_player_name(), "w23" , w23.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w23" , level_formspec(player,"level2",190,25,50,true,"wbb",true,"wbd",""))
     elseif fields.wbd then
         player_inv:set_stack("page2",  1, "default:dirt 3")
-        minetest.show_formspec(player:get_player_name(), "w24" , w24.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w24" , level_formspec(player,"level2",190,25,75,true,"wbc",true,"wbe",""))
     elseif fields.wbe then
         player_inv:set_stack("page2",  1, "default:dirt 4")
-        minetest.show_formspec(player:get_player_name(), "w25" , w25.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w25" , level_formspec(player,"level2",190,25,100,true,"wbd",true,"wbf",""))
     elseif fields.wbf then
         player_inv:set_stack("page2",  1, "default:dirt 5")
-        minetest.show_formspec(player:get_player_name(), "w26" , w26.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w26" , level_formspec(player,"level2",190,25,125,true,"wbe",true,"wbg",""))
     elseif fields.wbg then
         player_inv:set_stack("page2",  1, "default:dirt 6")
-        minetest.show_formspec(player:get_player_name(), "w27" , w27.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w27" , level_formspec(player,"level2",190,25,150,true,"wbf",true,"wbh",""))
 	elseif fields.wbh then
         player_inv:set_stack("page2",  1, "default:dirt 7")
-        minetest.show_formspec(player:get_player_name(), "w28" , w28.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w28" , level_formspec(player,"level2",190,15,175,true,"wbg",false,"You have finished world 2!","3.7"))
     elseif fields.wca then
         player_inv:set_stack("page3",  1, nil)
-        minetest.show_formspec(player:get_player_name(), "w31" , w31.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w31" , level_formspec(player,"level3",333,25,0,false,"",true,"wcb",""))
     elseif fields.wcb then
         player_inv:set_stack("page3",  1, "default:dirt")
-        minetest.show_formspec(player:get_player_name(), "w32" , w32.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w32" , level_formspec(player,"level3",333,25,25,true,"wca",true,"wcc",""))
     elseif fields.wcc then
         player_inv:set_stack("page3",  1, "default:dirt 2")
-        minetest.show_formspec(player:get_player_name(), "w33" , w33.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w33" , level_formspec(player,"level3",333,25,50,true,"wcb",true,"wcd",""))
     elseif fields.wcd then
         player_inv:set_stack("page3",  1, "default:dirt 3")
-        minetest.show_formspec(player:get_player_name(), "w34" , w34.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w34" , level_formspec(player,"level3",333,25,75,true,"wcc",true,"wce",""))
 	elseif fields.wce then
         player_inv:set_stack("page3",  1, "default:dirt 4")
-        minetest.show_formspec(player:get_player_name(), "w35" , w35.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w35" , level_formspec(player,"level3",333,25,100,true,"wcd",true,"wcf",""))
 	elseif fields.wcf then
         player_inv:set_stack("page3",  1, "default:dirt 5")
-        minetest.show_formspec(player:get_player_name(), "w36" , w36.get_formspec(player))	
+        minetest.show_formspec(player:get_player_name(), "w36" , level_formspec(player,"level3",333,25,125,true,"wce",true,"wcg",""))	
 	elseif fields.wcg then
         player_inv:set_stack("page3",  1, "default:dirt 6")
-        minetest.show_formspec(player:get_player_name(), "w37" , w37.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w37" , level_formspec(player,"level3",333,25,150,true,"wcf",true,"wch",""))
 	elseif fields.wch then
         player_inv:set_stack("page3",  1, "default:dirt 7")
-        minetest.show_formspec(player:get_player_name(), "w38" , w38.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w38" , level_formspec(player,"level3",333,25,175,true,"wcg",true,"wci",""))
 	elseif fields.wci then
         player_inv:set_stack("page3",  1, "default:dirt 8")
-        minetest.show_formspec(player:get_player_name(), "w39" , w39.get_formspec(player))	
+        minetest.show_formspec(player:get_player_name(), "w39" , level_formspec(player,"level3",333,25,200,true,"wch",true,"wcj",""))	
 	elseif fields.wcj then
         player_inv:set_stack("page3",  1, "default:dirt 9")
-        minetest.show_formspec(player:get_player_name(), "w310" , w310.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w310" , level_formspec(player,"level3",333,25,225,true,"wci",true,"wck",""))
 	elseif fields.wck then
         player_inv:set_stack("page3",  1, "default:dirt 10")
-        minetest.show_formspec(player:get_player_name(), "w311" , w311.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w311" , level_formspec(player,"level3",333,25,250,true,"wcj",true,"wcl",""))
 	elseif fields.wcl then
         player_inv:set_stack("page3",  1, "default:dirt 11")
-        minetest.show_formspec(player:get_player_name(), "w312" , w312.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w312" , level_formspec(player,"level3",333,25,275,true,"wck",true,"wcm",""))
 	elseif fields.wcm then
         player_inv:set_stack("page3",  1, "default:dirt 12")
-        minetest.show_formspec(player:get_player_name(), "w313" , w313.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w313" , level_formspec(player,"level3",333,25,300,true,"wcl",true,"wcn",""))
 	elseif fields.wcn then
         player_inv:set_stack("page3",  1, "default:dirt 13")
-        minetest.show_formspec(player:get_player_name(), "w314" , w314.get_formspec(player))
-	elseif fields.wda then
+        minetest.show_formspec(player:get_player_name(), "w314" , level_formspec(player,"level3",333,8,325,true,"wcm",false,"You have finished world 3!","2.7"))
+    elseif fields.wda then
         player_inv:set_stack("page4",  1, "")
-        minetest.show_formspec(player:get_player_name(), "w41" , w41.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w41" , level_formspec(player,"level4",300,25,0,false,"",true,"wdb",""))
 	elseif fields.wdb then
         player_inv:set_stack("page4",  1, "default:dirt")
-        minetest.show_formspec(player:get_player_name(), "w42" , w42.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w42" , level_formspec(player,"level4",300,25,25,true,"wda",true,"wdc",""))
 	elseif fields.wdc then
         player_inv:set_stack("page4",  1, "default:dirt 2")
-        minetest.show_formspec(player:get_player_name(), "w43" , w43.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w43" , level_formspec(player,"level4",300,25,50,true,"wdb",true,"wdd",""))
 	elseif fields.wdd then
         player_inv:set_stack("page4",  1, "default:dirt 3")
-        minetest.show_formspec(player:get_player_name(), "w44" , w44.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w44" , level_formspec(player,"level4",300,25,75,true,"wdc",true,"wde",""))
 	elseif fields.wde then
         player_inv:set_stack("page4",  1, "default:dirt 4")
-        minetest.show_formspec(player:get_player_name(), "w45" , w45.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w45" , level_formspec(player,"level4",300,25,100,true,"wdd",true,"wdf",""))
 	elseif fields.wdf then
         player_inv:set_stack("page4",  1, "default:dirt 5")
-        minetest.show_formspec(player:get_player_name(), "w46" , w46.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w46" , level_formspec(player,"level4",300,25,125,true,"wde",true,"wdg",""))
 	elseif fields.wdg then
         player_inv:set_stack("page4",  1, "default:dirt 6")
-        minetest.show_formspec(player:get_player_name(), "w47" , w47.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w47" , level_formspec(player,"level4",300,25,150,true,"wdf",true,"wdh",""))
 	elseif fields.wdh then
         player_inv:set_stack("page4",  1, "default:dirt 7")
-        minetest.show_formspec(player:get_player_name(), "w48" , w48.get_formspec(player))
+        minetest.show_formspec(player:get_player_name(), "w48" , level_formspec(player,"level4",300,25,175,true,"wdg",true,"wdi",""))
+	elseif fields.wdi then
+        player_inv:set_stack("page4",  1, "default:dirt 8")
+        minetest.show_formspec(player:get_player_name(), "w49" , level_formspec(player,"level4",300,25,200,true,"wdh",true,"wdj",""))
+	elseif fields.wdj then
+        player_inv:set_stack("page4",  1, "default:dirt 9")
+        minetest.show_formspec(player:get_player_name(), "w410" , level_formspec(player,"level4",300,25,225,true,"wdi",true,"wdk",""))
+	elseif fields.wdk then
+        player_inv:set_stack("page4",  1, "default:dirt 10")
+        minetest.show_formspec(player:get_player_name(), "w411" , level_formspec(player,"level4",300,25,250,true,"wdj",true,"wdl",""))
+    elseif fields.wdl then
+        player_inv:set_stack("page4",  1, "default:dirt 11")
+        minetest.show_formspec(player:get_player_name(), "w412" , level_formspec(player,"level4",300,25,275,true,"wdk",false,"You have finished world 4!","5.7"))
     else
         minetest.show_formspec(player:get_player_name(), "", "")
 	end
